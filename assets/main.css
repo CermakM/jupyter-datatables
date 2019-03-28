@@ -1,0 +1,87 @@
+/* main.css
+ *
+ * Table styles
+ */
+
+
+table.dataTable {
+  margin: 0 auto;
+  clear: both;
+  border-collapse: separate !important;
+  border-spacing: 0;
+}
+
+
+table.dataTable th, td {
+  padding: 11px 20px;
+
+  white-space: nowrap !important;
+}
+
+/* overwrite pandas border */
+.table-bordered th {
+  border: 1px solid #ddd !important;
+}
+
+/* only border in th cells */
+.table-bordered td {
+  border: none !important;
+}
+
+
+/* address double thead sorting rows */
+.dataTables_scrollBody thead {visibility: collapse;}
+
+/* address unwanted black lines */
+.dataTables_wrapper.no-footer .dataTables_scrollBody {
+  border-bottom: none !important;
+}
+
+.dataTables_wrapper input {
+    max-width: 970px;
+}
+
+.dataTables_wrapper input {
+  display: inline-block;
+  height: calc(2.75rem + 5px);
+  padding: 0.375rem 0.75rem;
+  line-height: 1.5;
+
+  color: #495057;
+  background-color: #fff;
+  background-clip: padding-box;
+
+  border: 1px solid #ced4da;
+  border-radius: 0.25rem;
+
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+
+.dataTables_wrapper label {
+  margin-right: 0 !important;
+  margin-bottom: 11px;
+
+  box-sizing: border-box;
+
+  white-space: nowrap;
+}
+
+
+.dataTables_wrapper select {
+  display: inline-block;
+  height: calc(2.75rem + 5px);
+  padding: 0.375rem 2.75rem 0.375rem 1.75rem;
+  line-height: 1.5;
+
+  vertical-align: middle;
+
+  background: #fff url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%23343a40' d='M2 0L0 2h4zm0 5L0 3h4z'/%3E%3C/svg%3E") no-repeat right 0.75rem center;
+  background-size: auto 11px;
+
+  border: 1px solid #ced4da;
+  border-radius: 0.25rem;
+
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
