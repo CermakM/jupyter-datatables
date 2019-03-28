@@ -1,0 +1,25 @@
+**/__pycache__
+*.egg-info/
+*.py[cod]
+.idea/
+.ipynb_checkpoints/
+
+build/
+dist/
+
+# virtualenvs
+env/
+venv/
+
+dist/
+build/
+
+# JS
+node_modules/
+
+# Compiled javascript
+# **/static/  FIXME when migrated to node.js
+
+# OS X
+.DS_Store
+
