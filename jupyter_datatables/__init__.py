@@ -130,20 +130,29 @@ def init_datatables_mode(options: dict = None):
         """Return DataTable representation of pandas DataFrame."""
         # classes for dataframe table (optional)
         classes = ['table', 'table-striped', 'table-bordered']
+        buttons = opts.pop('buttons', [])
 
         # create table DOM
         script = """
             const table = $.parseHTML(`$$html`);
             
             $(table).ready( () => {
-                let dt = $(table).DataTable($$opts);
+                dt = $(table).DataTable($$opts);
+                buttons = new $.fn.dataTable.Buttons( dt, {
+                    buttons: $$buttons
+                });
+            
+                $(dt.table().container()).prepend(buttons.container());
             });
             
             element.append(table);
         """
 
-        execute_with_requirements(
-            script, required=['datatables.net'], html=self.to_html(classes=classes), opts=json.dumps(opts))
+        execute_with_requirements(script,
+                                  required=['datatables.net'],
+                                  html=self.to_html(classes=classes),
+                                  opts=json.dumps(opts),
+                                  buttons=buttons)
 
         return ""
 

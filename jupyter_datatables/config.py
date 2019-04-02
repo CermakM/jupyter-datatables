@@ -10,7 +10,6 @@ __all__ = ['defaults']
 
 _DEFAULT_CONFIG = {
     'options': {
-        'dom': 'Bfrtip',
         'buttons': [
             'copy', 'print', 'csv', 'pdf'  # FIXME: 'excel' button does not appear
         ],
