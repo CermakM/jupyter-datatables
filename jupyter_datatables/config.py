@@ -10,11 +10,20 @@ __all__ = ['defaults']
 
 _DEFAULT_CONFIG = {
     'options': {
+        'dom': 'Bfrtip',
+        'buttons': [
+            'copy', 'print', 'csv', 'pdf'  # FIXME: 'excel' button does not appear
+        ],
         'ordering': True,
         'paging': True,
-        'scrollX': True,
+        'scrollX': False,  # FIXME: This option when set to True causes styling issues
         'scrollY': False,
         'searching': True,
+    },
+    'extensions': {
+        'buttons': True,
+        'scroller': True,
+        'select': True
     },
     'warnings': True,
 }
