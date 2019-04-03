@@ -9,7 +9,14 @@ __all__ = ['defaults']
 
 
 _DEFAULT_CONFIG = {
+    'classes': ['table', 'cell-border'],
     'options': {
+        'columnDefs': [
+            {
+                'targets': '_all',
+                'className': 'dt-body-center dt-head-center'
+            }
+        ],
         'buttons': [
             'copy', 'print', 'csv', 'pdf'  # FIXME: 'excel' button does not appear
         ],

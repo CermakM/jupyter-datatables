@@ -128,8 +128,8 @@ def init_datatables_mode(options: dict = None):
 
     def _repr_datatable_(self):
         """Return DataTable representation of pandas DataFrame."""
-        # classes for dataframe table (optional)
-        classes = ['table', 'table-striped', 'table-bordered']
+        # classes for dataframe table
+        classes = ' '.join(defaults.classes)
         buttons = opts.pop('buttons', [])
 
         # create table DOM
