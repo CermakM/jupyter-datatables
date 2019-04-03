@@ -136,20 +136,94 @@ def init_datatables_mode(options: dict = None):
         script = """
             const table = $.parseHTML(`$$html`);
             
+            let plot = function(data, container, margin) {
+                margin = margin || { left: 5, right: 5, top: 10, bottom: 10};
+
+                const width  = 600;
+                const height = 400;
+
+                let x_range = d3.scaleBand()
+                    .range([0, width])
+                    .padding(0.1)
+                    .domain(data);
+                
+                let y_range = d3.scaleLinear()
+                    .range([height, 0])
+                    .domain([0, d3.max(data)]);
+                
+                let svg_container = d3.select(container)
+                    .append('div')
+                    .classed('svg-container', true);
+
+                let svg = svg_container.append('svg')
+                    .attr('preserveAspectRatio', 'xMinYMin meet')
+                    .attr('viewBox', `0 0 ${width} ${height}`)
+                    .classed('svg-content', true);
+                let g = svg
+                    .append('g')
+                    .classed('bars', true);
+
+                g.selectAll('.bar')
+                    .data(data)
+                    .enter()
+                    .append('rect')
+                    .attr('x', (d) => x_range(d))
+                    .attr('y', (d) => y_range(d))
+                    .attr('width', x_range.bandwidth())
+                    .attr('height', (d) => height - y_range(d))
+                    .attr('fill', 'steelblue')
+                    .classed('bar', true);
+
+                return svg;
+            };
+            
             $(table).ready( () => {
-                dt = $(table).DataTable($$opts);
-                buttons = new $.fn.dataTable.Buttons( dt, {
+                let dt = $(table).DataTable($$opts);
+                let buttons = new $.fn.dataTable.Buttons( dt, {
                     buttons: $$buttons
                 });
             
                 $(dt.table().container()).prepend(buttons.container());
+                
+                /* Data preview */
+                const $header = $(dt.table().header());
+                const col_width  = $header.find('th').width(),
+                      col_height = $header.find('th').height(); 
+                
+                let $column_preview = $(dt.row(0).node())
+                    .clone()
+                    .attr('class', 'data-preview');
+                
+                console.log($column_preview.children().find('td'));
+                
+                let $data_columns = $column_preview
+                    .children()
+                      .empty()
+                      .removeAttr('aria-controls')
+                      .removeAttr('aria-label')
+                      .removeClass()  // remove all classes
+                    .siblings('td')
+                      .attr('role', 'figure')
+                      .addClass('column-data-preview');
+
+                $data_columns.each((i, elt) => {
+                    const data = dt.row(i).data();
+                    
+                    $(elt)
+                        .attr('aria-label', `data preview for column ${$(elt).text()}`);
+                    
+                    plot(data, elt);
+                });
+
+                $header.after($column_preview);
+                        
             });
-            
+        
             element.append(table);
         """
 
         execute_with_requirements(script,
-                                  required=['datatables.net'],
+                                  required=['datatables.net', 'd3'],
                                   html=self.to_html(classes=classes),
                                   opts=json.dumps(opts),
                                   buttons=buttons)
