@@ -9,21 +9,30 @@ __all__ = ['defaults']
 
 
 _DEFAULT_CONFIG = {
-    'classes': ['table', 'cell-border'],
+    'classes': ['table', 'cell-border', 'nowrap', 'no-footer'],
     'options': {
         'columnDefs': [
+            {
+                # this is the first column, assuming this is index of the table
+                'searchable': False,
+                'width': '5%',
+                'targets': 0,
+            },
             {
                 'targets': '_all',
                 'className': 'dt-body-center dt-head-center'
             }
         ],
         'buttons': [
-            'print', 'csv', 'pdf'  # FIXME: 'excel' button does not appear
+            'print', 'csv', 'pdf'  # FIXME: unstable, 'excel' button does not appear at all
         ],
+
         'ordering': True,
         'paging': True,
-        'scrollX': False,  # FIXME: This option when set to True causes styling issues
+
+        'scrollX': True,
         'scrollY': False,
+
         'searching': True,
     },
     'extensions': {

@@ -1,20 +1,26 @@
-/* main.css
+/*
+ * DataTables custom stylesheet
  *
- * Table styles
+ * @file main.css
  */
+
 
 table.dataTable {
     margin: 0 auto;
-    clear: both;
+
+    width: 100% !important;
+
     border-collapse: separate !important;
     border-spacing: 0;
+
+    clear: both;
+
+    table-layout: auto !important;
 }
 
 
 table.dataTable th, td {
     padding: 11px 20px;
-
-    white-space: nowrap !important;
 }
 
 /* overwrite pandas border */
@@ -37,13 +43,11 @@ table.dataTable th, td {
 }
 
 .dataTables_wrapper input {
-    max-width: 970px;
-}
-
-.dataTables_wrapper input {
     display: inline-block;
-    height: calc(2.75rem + 5px);
+
     padding: 0.375rem 0.75rem;
+
+    height: calc(2.75rem + 5px);
     line-height: 1.5;
 
     color: #495057;
@@ -69,8 +73,10 @@ table.dataTable th, td {
 
 .dataTables_wrapper select {
     display: inline-block;
-    height: calc(2.75rem + 5px);
+
     padding: 0.375rem 2.75rem 0.375rem 1.75rem;
+
+    height: calc(2.75rem + 5px);
     line-height: 1.5;
 
     vertical-align: middle;

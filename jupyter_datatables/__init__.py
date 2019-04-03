@@ -27,6 +27,8 @@ import json
 import pandas as pd
 
 from collections import OrderedDict
+from functools import partialmethod
+
 from pathlib import Path
 
 from jupyter_require import require
@@ -34,23 +36,22 @@ from jupyter_require import link_css
 from jupyter_require import load_css
 from jupyter_require import execute_with_requirements
 
+from . import config
+
+
 _HERE = Path(__file__).parent
 
 
-def init_datatables_mode(options: dict = None):
+def init_datatables_mode(options: dict = None, classes: list = None):
     """Initialize DataTable mode for pandas DataFrame represenation."""
-    from .config import defaults
-
     # extensions to be loaded
-    extensions = defaults.extensions
+    extensions = config.defaults.extensions
 
-    opts = defaults.options
-    opts.update(options or {})
+    require('d3', 'https://cdnjs.cloudflare.com/ajax/libs/d3/5.9.2/d3.min')
 
     # configure path to the datatables library using requireJS
     libs = OrderedDict({
         'datatables.net': 'https://cdn.datatables.net/1.10.18/js/jquery.dataTables.min',
-        'd3': 'https://d3js.org/d3.v5.min'
     })
     shim = OrderedDict({
         'datatables.net': {
@@ -121,112 +122,134 @@ def init_datatables_mode(options: dict = None):
              'rr-1.2.4/'  # RowReorder
              'sc-2.0.0/'  # Scroll
              'sl-1.3.0/'  # Select
-             'datatables.min.css')
+             'datatables.min.css', {'id': 'datatables.min.css'})
 
     # load custom style
     load_css(
-        Path(_HERE, '../assets/main.css').read_text(encoding='utf-8'), {'id': 'datatables-main-css'})
+        Path(_HERE, '../assets/main.css').read_text(encoding='utf-8'), {'id': 'jupyter-datatables.main.css'})
 
-    def _repr_datatable_(self):
-        """Return DataTable representation of pandas DataFrame."""
-        # classes for dataframe table
-        classes = ' '.join(defaults.classes)
-        buttons = opts.pop('buttons', [])
+    pd.DataFrame._repr_javascript_ = partialmethod(_repr_datatable_, options=options, classes=classes)
 
-        # create table DOM
-        script = """
-            const table = $.parseHTML(`$$html`);
+
+def _repr_datatable_(self, options: dict = None, classes: list = None):
+    """Return DataTable representation of pandas DataFrame."""
+    if options is None:
+        options = {}
+        options.update(config.defaults.options)
+
+    # pop buttons, we need to use them separately
+    buttons = options.pop('buttons', [])
+    classes = classes if classes is not None else ' '.join(config.defaults.classes)
+
+    script = """
+        let plot = function(data, container, margin) {
+            margin = margin || { left: 5, right: 5, top: 10, bottom: 10};
+
+            const width  = 600;
+            const height = 400;
+
+            let x_range = d3.scaleBand()
+                .range([0, width])
+                .padding(0.1)
+                .domain(data);
             
-            let plot = function(data, container, margin) {
-                margin = margin || { left: 5, right: 5, top: 10, bottom: 10};
-
-                const width  = 600;
-                const height = 400;
-
-                let x_range = d3.scaleBand()
-                    .range([0, width])
-                    .padding(0.1)
-                    .domain(data);
-                
-                let y_range = d3.scaleLinear()
-                    .range([height, 0])
-                    .domain([0, d3.max(data)]);
-                
-                let svg_container = d3.select(container)
-                    .append('div')
-                    .classed('svg-container', true);
-
-                let svg = svg_container.append('svg')
-                    .attr('preserveAspectRatio', 'xMinYMin meet')
-                    .attr('viewBox', `0 0 ${width} ${height}`)
-                    .classed('svg-content', true);
-                let g = svg
-                    .append('g')
-                    .classed('bars', true);
-
-                g.selectAll('.bar')
-                    .data(data)
-                    .enter()
-                    .append('rect')
-                    .attr('x', (d) => x_range(d))
-                    .attr('y', (d) => y_range(d))
-                    .attr('width', x_range.bandwidth())
-                    .attr('height', (d) => height - y_range(d))
-                    .attr('fill', 'steelblue')
-                    .classed('bar', true);
-
-                return svg;
-            };
+            let y_range = d3.scaleLinear()
+                .range([height, 0])
+                .domain([0, d3.max(data)]);
             
-            $(table).ready( () => {
-                let dt = $(table).DataTable($$opts);
-                let buttons = new $.fn.dataTable.Buttons( dt, {
-                    buttons: $$buttons
-                });
-            
-                $(dt.table().container()).prepend(buttons.container());
-                
-                /* Data preview */
-                const $header = $(dt.table().header());
-                const col_width  = $header.find('th').width(),
-                      col_height = $header.find('th').height(); 
-                
-                let $column_preview = $(dt.row(0).node())
-                    .clone()
-                    .attr('class', 'data-preview');
-                                
-                let $data_columns = $column_preview
-                    .children()
-                      .empty()
-                      .removeAttr('aria-controls')
-                      .removeAttr('aria-label')
-                      .removeClass()  // remove all classes
-                    .siblings('td')
-                      .attr('role', 'figure')
-                      .addClass('column-data-preview');
+            let svg_container = d3.select(container)
+                .append('div')
+                .classed('svg-container', true);
 
-                $data_columns.each((i, elt) => {
-                    const data = dt.row(i).data();
+            let svg = svg_container.append('svg')
+                .attr('preserveAspectRatio', 'xMinYMin meet')
+                .attr('viewBox', `0 0 ${width} ${height}`)
+                .classed('svg-content', true);
+            let g = svg
+                .append('g')
+                .classed('bars', true);
+
+            g.selectAll('.bar')
+                .data(data)
+                .enter()
+                .append('rect')
+                .attr('x', (d) => x_range(d))
+                .attr('y', (d) => y_range(d))
+                .attr('width', x_range.bandwidth())
+                .attr('height', (d) => height - y_range(d))
+                .attr('fill', 'steelblue')
+                .classed('bar', true);
+
+            return svg;
+        };
+        
+        let append_table = function(html) {
+            return new Promise( (resolve) => {
+                const table = $.parseHTML(html);
+                
+                $(table).ready( () => {
+                    element.append(table);
                     
-                    $(elt)
-                        .attr('aria-label', `data preview for column ${$(elt).text()}`);
-                    
-                    plot(data, elt);
+                    resolve(table);
                 });
-
-                $header.after($column_preview);
-                        
+            });
+        };
+        
+        let create_datatable = function(table) {
+            let dt = $(table).DataTable($$options);
+            let buttons = new $.fn.dataTable.Buttons( dt, {
+                buttons: $$buttons
             });
         
-            element.append(table);
-        """
+            $(dt.table().container()).prepend(buttons.container());
+            
+            /* Data preview */
+            const $header = $(dt.table().header());
+            const col_width  = $header.find('th').width(),
+                  col_height = $header.find('th').height(); 
+            
+            let $data_preview = $(dt.row(0).node())
+                .clone()
+                .attr('class', 'data-preview');
+                        
+            $data_preview
+                .children()
+                  .empty()
+                  .removeAttr('aria-controls')
+                  .removeAttr('aria-label')
+                  .removeClass()  // remove all classes
+                .siblings('td')
+                  .attr('role', 'figure')
+                  .addClass('column-data-preview');
 
-        execute_with_requirements(script,
-                                  required=['datatables.net', 'd3'],
-                                  html=self.to_html(classes=classes),
-                                  opts=json.dumps(opts),
-                                  buttons=buttons)
+            $data_preview.children().each((i, elt) => {
+                if ($(elt).is('th'))  // skip indices
+                    return;
+                
+                const data = dt.column(i).data();
+                $(elt)
+                    .attr('aria-label', `data preview for column ${$(elt).text()}`);
 
-        return ""
+                plot(data, elt);
+            });
 
-    pd.DataFrame._repr_javascript_ = _repr_datatable_
+            $header.after($data_preview);
+            
+            return dt;
+        };
+        
+        append_table(`$$html`)
+            .then( (table) => { return create_datatable(table); })
+            .then( (dt) => dt.columns.adjust() )
+            .catch(console.error);
+    """
+
+    html = self.to_html(classes=classes)
+
+    execute_with_requirements(script,
+                              required=['datatables.net', 'd3'],
+                              html=html,
+                              options=json.dumps(options),
+                              buttons=buttons)
+
+    return ""
