@@ -18,7 +18,7 @@ _DEFAULT_CONFIG = {
             }
         ],
         'buttons': [
-            'copy', 'print', 'csv', 'pdf'  # FIXME: 'excel' button does not appear
+            'print', 'csv', 'pdf'  # FIXME: 'excel' button does not appear
         ],
         'ordering': True,
         'paging': True,

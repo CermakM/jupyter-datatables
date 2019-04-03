@@ -49,7 +49,8 @@ def init_datatables_mode(options: dict = None):
 
     # configure path to the datatables library using requireJS
     libs = OrderedDict({
-        'datatables.net': 'https://cdn.datatables.net/1.10.18/js/jquery.dataTables.min'
+        'datatables.net': 'https://cdn.datatables.net/1.10.18/js/jquery.dataTables.min',
+        'd3': 'https://d3js.org/d3.v5.min'
     })
     shim = OrderedDict({
         'datatables.net': {
@@ -193,9 +194,7 @@ def init_datatables_mode(options: dict = None):
                 let $column_preview = $(dt.row(0).node())
                     .clone()
                     .attr('class', 'data-preview');
-                
-                console.log($column_preview.children().find('td'));
-                
+                                
                 let $data_columns = $column_preview
                     .children()
                       .empty()
