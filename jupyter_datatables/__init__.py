@@ -204,13 +204,8 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
             $(dt.table().container()).prepend(buttons.container());
             
             /* Data preview */
-            const $header = $(dt.table().header());
-            const col_width  = $header.find('th').width(),
-                  col_height = $header.find('th').height(); 
-            
             let $data_preview = $(dt.row(0).node())
-                .clone()
-                .attr('class', 'data-preview');
+                .clone();
                         
             $data_preview
                 .children()
@@ -232,8 +227,16 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
 
                 plot(data, elt);
             });
-
-            $header.after($data_preview);
+            
+            let data_header = $('<thead>')
+                .attr('class', 'data-preview')
+                .html($data_preview.html());
+        
+            data_header.ready(() => {
+                $(dt.table().node())
+                    .find('thead')
+                    .replaceWith(data_header);
+            })
             
             return dt;
         };
