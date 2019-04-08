@@ -35,7 +35,7 @@ table.dataTable td.column-data-preview {
 }
 
 /* address double thead sorting rows */
-.dataTables_scrollBody thead:not('.data-preview') {visibility: collapse;}
+.dataTables_scrollBody thead:not(.data-preview) {visibility: collapse;}
 
 .dataTables_wrapper.no-footer .dataTables_scrollBody {
     border-bottom: 1px solid #ddd;
