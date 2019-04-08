@@ -26,6 +26,8 @@
 import json
 import pandas as pd
 
+from datetime import datetime
+
 from collections import OrderedDict
 from functools import partialmethod
 
@@ -51,7 +53,7 @@ def init_datatables_mode(options: dict = None, classes: list = None):
 
     # configure path to the datatables library using requireJS
     libs = OrderedDict({
-        'datatables.net': 'https://cdn.datatables.net/1.10.18/js/jquery.dataTables.min',
+        'datatables.net': 'https://cdn.datatables.net/1.10.18/js/jquery.dataTables',  # FIXME: minified version on prod
     })
     shim = OrderedDict({
         'datatables.net': {
@@ -142,112 +144,160 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
     classes = classes if classes is not None else ' '.join(config.defaults.classes)
 
     script = """
-        let plot = function(data, container, margin) {
-            margin = margin || { left: 5, right: 5, top: 10, bottom: 10};
+    let plot = function(data, container, margin) {
+        margin = margin || { left: 5, right: 5, top: 10, bottom: 10};
 
-            const width  = 600;
-            const height = 400;
+        const width  = 600;
+        const height = 400;
 
-            let x_range = d3.scaleBand()
-                .range([0, width])
-                .padding(0.1)
-                .domain(data);
-            
-            let y_range = d3.scaleLinear()
-                .range([height, 0])
-                .domain([0, d3.max(data)]);
-            
-            let svg_container = d3.select(container)
-                .append('div')
-                .classed('svg-container', true);
-
-            let svg = svg_container.append('svg')
-                .attr('preserveAspectRatio', 'xMinYMin meet')
-                .attr('viewBox', `0 0 ${width} ${height}`)
-                .classed('svg-content', true);
-            let g = svg
-                .append('g')
-                .classed('bars', true);
-
-            g.selectAll('.bar')
-                .data(data)
-                .enter()
-                .append('rect')
-                .attr('x', (d) => x_range(d))
-                .attr('y', (d) => y_range(d))
-                .attr('width', x_range.bandwidth())
-                .attr('height', (d) => height - y_range(d))
-                .attr('fill', 'steelblue')
-                .classed('bar', true);
-
-            return svg;
-        };
+        let x_range = d3.scaleBand()
+            .range([0, width])
+            .padding(0.1)
+            .domain(data);
         
-        let append_table = function(html) {
-            return new Promise( (resolve) => {
-                const table = $.parseHTML(html);
+        let y_range = d3.scaleLinear()
+            .range([height, 0])
+            .domain([0, d3.max(data)]);
+        
+        let svg_container = d3.select(container)
+            .append('div')
+            .classed('svg-container', true);
+
+        let svg = svg_container.append('svg')
+            .attr('preserveAspectRatio', 'xMinYMin meet')
+            .attr('viewBox', `0 0 ${width} ${height}`)
+            .classed('svg-content', true);
+        let g = svg
+            .append('g')
+            .classed('bars', true);
+
+        g.selectAll('.bar')
+            .data(data)
+            .enter()
+            .append('rect')
+            .attr('x', (d) => x_range(d))
+            .attr('y', (d) => y_range(d))
+            .attr('width', x_range.bandwidth())
+            .attr('height', (d) => height - y_range(d))
+            .attr('fill', 'steelblue')
+            .classed('bar', true);
+
+        return svg;
+    };
+    
+    let append_table = function(html) {
+        return new Promise( (resolve) => {
+            const table = $.parseHTML(html);
+            
+            $(table).ready( () => {
+                element.append(table);
                 
-                $(table).ready( () => {
-                    element.append(table);
-                    
-                    resolve(table);
-                });
+                resolve(table);
             });
-        };
+        });
+    };
+    
+    function DataPreview (settings, options) {
+        this.dt = settings.oInstance.api();
+        this.data = this.dt.data();
         
-        let create_datatable = function(table) {
-            let dt = $(table).DataTable($$options);
-            let buttons = new $.fn.dataTable.Buttons( dt, {
-                buttons: $$buttons
-            });
+        this.preview = null;
         
-            $(dt.table().container()).prepend(buttons.container());
-            
-            /* Data preview */
-            let $data_preview = $(dt.row(0).node())
-                .clone();
-                        
-            $data_preview
-                .children()
-                  .empty()
-                  .removeAttr('aria-controls')
-                  .removeAttr('aria-label')
-                  .removeClass()  // remove all classes
-                .siblings('td')
-                  .attr('role', 'figure')
-                  .addClass('column-data-preview');
+        this.container = $(settings.nTHead);
+    }
+    
+    DataPreview.prototype.create_preview = function() {
+        let data_preview = $(this.dt.row(0).node())
+            .clone()
+            .removeClass();
 
-            $data_preview.children().each((i, elt) => {
-                if ($(elt).is('th'))  // skip indices
-                    return;
-                
-                const data = dt.column(i).data();
-                $(elt)
-                    .attr('aria-label', `data preview for column ${$(elt).text()}`);
+        data_preview
+            .children()
+              .empty()
+              .removeAttr('aria-controls')
+              .removeAttr('aria-label')
+              .removeClass()  // remove all classes
+            .siblings('td')
+              .attr('role', 'figure')
+              .addClass('column-data-preview');
 
-                plot(data, elt);
-            });
-            
-            let data_header = $('<thead>')
+        data_preview.children().each((i, elt) => {
+            if ($(elt).is('th'))  // skip indices
+                return;
+
+            const data = this.dt.column(i).data();
+            $(elt)
+                .attr('aria-label', `data preview for column ${$(elt).text()}`);
+
+            plot(data, elt);
+        });
+        
+        data_preview.ready(() => {
+            this.preview = data_preview
                 .attr('class', 'data-preview')
-                .html($data_preview.html());
-        
-            data_header.ready(() => {
-                $(dt.table().node())
-                    .find('thead')
-                    .replaceWith(data_header);
-            })
+                .append(data_preview);
             
-            return dt;
-        };
+            console.debug("Data preview created.", this.preview);
+        });
         
-        append_table(`$$html`)
-            .then( (table) => { return create_datatable(table); })
-            .then( (dt) => dt.columns.adjust() )
-            .catch(console.error);
+        return this;
+    }
+    
+    DataPreview.prototype.draw = function() {
+        return this.ready((elt) => {
+            $(this.container)
+                .append(this.preview);
+        });
+    };
+    
+    DataPreview.prototype.ready = function(f) {
+        return $(this.preview).ready(f);
+    };
+    
+    
+    $.fn.dataTable.DataPreview = DataPreview;
+    $.fn.DataTable.DataPreview = $.fn.dataTable.DataPreview;
+    
+    $.fn.dataTable.ext.previews = {};
+    
+
+    let create_datatable = function(table) {
+        const options = $$options;
+        
+        Object.assign(options, {
+            fnInitComplete: function(settings) {
+                let previews = $.fn.dataTable.ext.previews;
+                let table_id = settings.sTableId;
+                
+                let dataPreview = null;
+                if (!_.has(previews, table_id)) {
+                    console.debug('Data preview initialization.', settings);
+                    
+                    dataPreview = new $.fn.dataTable.DataPreview(settings);
+                    previews[table_id] = dataPreview.create_preview();
+                } else { dataPreview = previews[settings.sTableId]; }
+                
+                dataPreview.draw();
+            }
+        })
+        let dt = $(table).DataTable(options);
+        let buttons = new $.fn.dataTable.Buttons( dt, {
+            buttons: $$buttons
+        });
+    
+        $(dt.table().container()).prepend(buttons.container());
+        
+        return dt;
+    };
+    
+    append_table(`$$html`)
+        .then( (table) => { return create_datatable(table); })
+        .then( (dt) => dt.columns.adjust() )
+        .catch(console.error);
     """
 
-    html = self.to_html(classes=classes)
+    ts = int(datetime.timestamp(datetime.now()))
+    html = self.to_html(classes=classes, table_id=ts)
 
     execute_with_requirements(script,
                               required=['datatables.net', 'd3'],
@@ -255,4 +305,17 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
                               options=json.dumps(options),
                               buttons=buttons)
 
-    return ""
+    # return script which links the scrollbars event after save
+    return """
+        let scrollHead = $('div.dataTables_scrollHead');
+        let scrollBody = $('div.dataTables_scrollBody');
+
+        $(scrollBody).off('scroll');
+
+        // When the body is scrolled, then we also want to scroll the headers
+        $(scrollBody).on( 'scroll', function (e) {
+            let scrollLeft = this.scrollLeft;
+            
+            scrollHead.scrollLeft(scrollLeft);
+        });
+    """
