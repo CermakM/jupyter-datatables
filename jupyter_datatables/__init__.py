@@ -23,10 +23,10 @@
 
 """Jupyter interactive pandas DataFrame representation."""
 
+import hashlib
 import json
-import pandas as pd
 
-from datetime import datetime
+import pandas as pd
 
 from collections import OrderedDict
 from functools import partialmethod
@@ -36,6 +36,7 @@ from pathlib import Path
 from jupyter_require import require
 from jupyter_require import link_css
 from jupyter_require import load_css
+from jupyter_require import safe_execute
 from jupyter_require import execute_with_requirements
 
 from . import config
@@ -296,8 +297,11 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
         .catch(console.error);
     """
 
-    ts = int(datetime.timestamp(datetime.now()))
-    html = self.to_html(classes=classes, table_id=ts)
+    sha = hashlib.sha256(
+        self.sample(min(len(self), 1000)).to_json().encode())
+    digest = sha.hexdigest()
+
+    html = self.to_html(classes=classes, table_id=digest)
 
     execute_with_requirements(script,
                               required=['datatables.net', 'd3'],
@@ -306,16 +310,23 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
                               buttons=buttons)
 
     # return script which links the scrollbars event after save
-    return """
-        let scrollHead = $('div.dataTables_scrollHead');
-        let scrollBody = $('div.dataTables_scrollBody');
-
-        $(scrollBody).off('scroll');
-
-        // When the body is scrolled, then we also want to scroll the headers
-        $(scrollBody).on( 'scroll', function (e) {
-            let scrollLeft = this.scrollLeft;
-            
-            scrollHead.scrollLeft(scrollLeft);
-        });
+    safe_script = """
+    setTimeout(() => {
+        const table_id = '$$table_id';
+        const table    = $(`#${table_id}_wrapper`);
+        
+        let scrollHead = table.find('div.dataTables_scrollHead');
+        let scrollBody = table.find('div.dataTables_scrollBody');
+        
+        $(scrollBody).on(
+            'scroll',
+            (e) => {
+                scrollHead.scrollLeft(scrollBody.scrollLeft());
+            },
+        );
+    }, 200);
     """
+
+    safe_execute(safe_script, table_id=digest)
+
+    return ""
