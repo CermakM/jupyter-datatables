@@ -34,15 +34,14 @@ table.dataTable td.column-data-preview {
 }
 
 .dataTables_wrapper.no-footer .dataTables_scrollBody {
-    margin-bottom: 20px;
+    padding-bottom: 20px;
+    
     border-bottom: none;
 }
 
 .dataTables_wrapper.no-footer div.dataTables_scrollBody > table {
     border-top: thin solid #ddd;
     border-bottom: thin solid #ddd;
-
-    margin-bottom: 10px;
 }
 
 
