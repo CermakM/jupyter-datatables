@@ -9,7 +9,7 @@ __all__ = ['defaults']
 
 
 _DEFAULT_CONFIG = {
-    'classes': ['table', 'cell-border', 'nowrap', 'no-footer'],
+    'classes': ['table', 'cell-border', 'nowrap'],
     'options': {
         'columnDefs': [
             {

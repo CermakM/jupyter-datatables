@@ -5,11 +5,11 @@
  */
 
 
+.dt-buttons {
+    padding-right: 10px;
+}
+
 table.dataTable {
-    margin: 0 auto;
-
-    width: 100% !important;
-
     border-collapse: separate !important;
     border-spacing: 0;
 
@@ -21,24 +21,28 @@ table.dataTable {
 
 table.dataTable thead th, table.dataTable thead td {
     padding: 10px 18px;
-    border-bottom: 1px solid #ddd;
+    border-bottom: thin solid #ddd;
 }
 
 table.dataTable td.column-data-preview {
     padding: 11px 7px;
 }
 
-
-/* overwrite pandas border */
-.table-bordered th {
-    border: 1px solid #ddd !important;
+/* address double thead sorting rows */
+.dataTables_scrollBody thead:not(.data-preview) {
+    visibility: collapse;
 }
 
-/* address double thead sorting rows */
-.dataTables_scrollBody thead:not(.data-preview) {visibility: collapse;}
-
 .dataTables_wrapper.no-footer .dataTables_scrollBody {
-    border-bottom: 1px solid #ddd;
+    margin-bottom: 20px;
+    border-bottom: none;
+}
+
+.dataTables_wrapper.no-footer div.dataTables_scrollBody > table {
+    border-top: thin solid #ddd;
+    border-bottom: thin solid #ddd;
+
+    margin-bottom: 10px;
 }
 
 
@@ -54,7 +58,7 @@ table.dataTable td.column-data-preview {
     background-color: #fff;
     background-clip: padding-box;
 
-    border: 1px solid #ced4da;
+    border: thin solid #ced4da;
     border-radius: 0.25rem;
 
     transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
@@ -84,14 +88,9 @@ table.dataTable td.column-data-preview {
     background: #fff url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%23343a40' d='M2 0L0 2h4zm0 5L0 3h4z'/%3E%3C/svg%3E") no-repeat right 0.75rem center;
     background-size: auto 11px;
 
-    border: 1px solid #ced4da;
+    border: thin solid #ced4da;
     border-radius: 0.25rem;
 
     -webkit-appearance: none;
     -moz-appearance: none;
 }
-
-.dt-buttons {
-    padding-right: 10px;
-}
-
