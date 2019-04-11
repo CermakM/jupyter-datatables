@@ -1,10 +1,9 @@
 # Jupyter DataTables
 
-## The new default for `pd.DataFrame` display representation
-
 Jupyter Notebook extension to levarage pandas DataFrames by integrating DataTables JS.
 
----
+
+<br>
 
 #### About
 
