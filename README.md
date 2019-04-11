@@ -45,10 +45,17 @@ That's it, your default pandas representation will now use Jupyter DataTables!
 
 ```python
 df = pd.DataFrame(np.abs(np.random.randn(50, 8)), columns=list(string.ascii_uppercase[:8]))
-df
 ```
 
 ![Jupyter Datatables table representation](/assets/images/jupyter-datatables.png)
+
+We can also handle wide tables with ease.
+
+```python
+df = pd.DataFrame(np.abs(np.random.randn(50, 20)), columns=list(string.ascii_uppercase[:20]))
+```
+
+![Jupyter Datatables wide table representation](/assets/images/jupyter-datatables-wide.png)
 
 <br>
  
