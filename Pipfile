@@ -14,8 +14,11 @@ ipykernel = "*"
 pandas = "*"
 
 # nbextensions
-jupyter-require = ">=0.2.0"
+jupyter-require = ">=0.2.1"
 jupyter_contrib_nbextensions = "*"
 
 [requires]
 python_version = "3.6"
+
+[pipenv]
+allow_prereleases = true
