@@ -129,7 +129,7 @@ def init_datatables_mode(options: dict = None, classes: list = None):
 
     # load custom style
     load_css(
-        Path(_HERE, '../assets/main.css').read_text(encoding='utf-8'), {'id': 'jupyter-datatables.main.css'})
+        Path(_HERE, 'css/jupyter-datatables.css').read_text(encoding='utf-8'), {'id': 'jupyter-datatables.css'})
 
     pd.DataFrame._repr_javascript_ = partialmethod(_repr_datatable_, options=options, classes=classes)
 

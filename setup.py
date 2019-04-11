@@ -50,5 +50,9 @@ setup(
     packages=find_packages(),
     include_package_data=True,
 
+    package_data={
+        NAME: ["css/*.css"]
+    },
+
     zip_safe=False
 )
