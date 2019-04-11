@@ -24,8 +24,8 @@ pip install jupyter-datatables
 And enable the required extensions
 
 ```bash
-jupyter nbextension install --sys --py jupyter_require
-jupyter nbextension enable jupyter-require
+jupyter nbextension install --sys-prefix --py jupyter_require
+jupyter nbextension enable jupyter-require/extension
 ```
 
 <br>
