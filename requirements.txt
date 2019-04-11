@@ -1,0 +1,7 @@
+ipython
+ipykernel
+
+pandas
+
+# nbextensions
+jupyter-require

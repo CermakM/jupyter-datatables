@@ -1,0 +1,21 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+ipython = "*"
+ipykernel = "*"
+
+[packages]
+ipython = "*"
+ipykernel = "*"
+
+pandas = "*"
+
+# nbextensions
+jupyter-require = "*"
+jupyter_contrib_nbextensions = "*"
+
+[requires]
+python_version = "3.6"
