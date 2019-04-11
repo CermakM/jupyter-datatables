@@ -1,0 +1,27 @@
+graft assets
+
+include LICENSE
+include README.md
+
+# Documentation
+graft docs
+exclude docs/\#*
+
+# docs subdirs we want to skip
+prune docs/build
+prune docs/dist
+
+# Examples
+graft examples
+
+# Patterns to exclude from any directory
+global-exclude *~
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude .git
+global-exclude .ipynb_checkpoints
+
+# JS files
+graft js
+prune js/node_modules
+
