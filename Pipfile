@@ -6,13 +6,14 @@ verify_ssl = true
 [dev-packages]
 ipython = "*"
 ipykernel = "*"
+pylint = "*"
+black = "*"
+autopep8 = "*"
 
 [packages]
 ipython = "*"
 ipykernel = "*"
-
 pandas = "*"
-
 # nbextensions
 jupyter-require = ">=0.2.1"
 jupyter_contrib_nbextensions = "*"
