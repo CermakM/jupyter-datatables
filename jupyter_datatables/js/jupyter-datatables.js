@@ -3,47 +3,57 @@ define('jupyter-datatables', function (require) {
     let d3 = require("d3");
 
     let plot = function (data, container, margin) {
-        margin = margin || {
-            left: 5,
-            right: 5,
-            top: 10,
-            bottom: 10
-        };
+            const width  = 600,
+                  height = 400;
+            
+            // TODO: Implement Freedman-Diaconis rule
+            const n_bins = 10;
 
-        const width = 600;
-        const height = 400;
+            margin = {
+                left: 5,
+                right: 5,
+                top: 10,
+                bottom: 10
+            };
 
-        let x_range = d3.scaleBand()
-            .range([0, width])
-            .padding(0.1)
-            .domain(data);
+            let svg_container = d3.select(container)
+                .append('div')
+                .classed('svg-container', true);
 
-        let y_range = d3.scaleLinear()
-            .range([height, 0])
-            .domain([0, d3.max(data)]);
+            let svg = svg_container.append('svg')
+                .attr('preserveAspectRatio', 'xMinYMin meet')
+                .attr('viewBox', `0 0 ${width} ${height}`)
+                .classed('svg-content', true);
 
-        let svg_container = d3.select(container)
-            .append('div')
-            .classed('svg-container', true);
+            let g = svg
+                .append('g')
+                .classed('bars', true);
 
-        let svg = svg_container.append('svg')
-            .attr('preserveAspectRatio', 'xMinYMin meet')
-            .attr('viewBox', `0 0 ${width} ${height}`)
-            .classed('svg-content', true);
-        let g = svg
-            .append('g')
-            .classed('bars', true);
+            let x_range = d3.scaleLinear()
+                .domain(d3.extent(data))
+                .nice()
+                .range([0, width]);
 
-        g.selectAll('.bar')
-            .data(data)
-            .enter()
-            .append('rect')
-            .attr('x', (d) => x_range(d))
-            .attr('y', (d) => y_range(d))
-            .attr('width', x_range.bandwidth())
-            .attr('height', (d) => height - y_range(d))
-            .attr('fill', 'steelblue')
-            .classed('bar', true);
+            let bins = d3.histogram()
+                .domain(x_range.domain())
+                .thresholds(x_range.ticks(n_bins))
+                (data);
+
+            let y_range = d3.scaleLinear()
+                .domain([0, d3.max(bins, d => d.length)])
+                .nice()
+                .range([height, 0]); // reverse the domain
+
+            g.selectAll('.bar')
+                .data(bins)
+                .enter()
+                .append('rect')
+                .attr('x', (d) => x_range(d.x0) + 1)
+                .attr('y', (d) => y_range(d.length))
+                .attr('width', (d) => Math.max(0, x_range(d.x1) - x_range(d.x0) - 1))
+                .attr('height', (d) => y_range(0) - y_range(d.length))
+                .attr('fill', 'steelblue')
+                .classed('bar', true);
 
         return svg;
     };
