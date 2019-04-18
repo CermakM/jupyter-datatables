@@ -132,12 +132,12 @@ def init_datatables_mode(options: dict = None, classes: list = None):
     # load custom style
     load_css(
         Path(_HERE, "css/jupyter-datatables.css").read_text(encoding="utf-8"),
-        {"id": "jupyter-datatables.css"},
+        {"id": "jupyter-datatables-css"},
     )
 
     load_js(
         Path(_HERE, "js/jupyter-datatables.js").read_text(encoding="utf-8"),
-        {"id": "jupyter-datatables.js"})
+        {"id": "jupyter-datatables-js"})
 
     pd.DataFrame._repr_javascript_ = partialmethod(
         _repr_datatable_, options=options, classes=classes
@@ -162,7 +162,9 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
     events.one('output_appended.OutputArea', () => dt.columns.adjust());
     """
 
-    sha = hashlib.sha256(self.sample(min(len(self), 1000)).to_json().encode())
+    sha = hashlib.sha256(
+        self.sample(min(len(self), config.defaults.sample_size)).to_json().encode()
+    )
     digest = sha.hexdigest()
 
     html = self.to_html(classes=classes, table_id=digest)
@@ -195,4 +197,8 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
 
     safe_execute(safe_script, table_id=digest)
 
-    return ""
+    msg = ""
+    if config.defaults.sample_size < len(self):
+        msg = f"Sample of size {config.defaults.sample_size} out of {len(self)}"
+
+    return msg
