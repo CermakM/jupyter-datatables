@@ -94,6 +94,12 @@ def init_datatables_mode(options: dict = None, classes: list = None):
         ] = "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts"
         shim["vfsfonts"] = {"deps": ["datatables.net"]}
 
+    if extensions.get("responsive", False):
+        libs["datatables.responsive"] = (
+            "https://cdn.datatables.net/" "responsive/2.2.2/js/dataTables.responsive.min"
+        )  # Responsive
+
+
     if extensions.get("scroller", False):
         libs["datatables.scroller"] = (
             "https://cdn.datatables.net/" "scroller/2.0.0/js/dataTables.scroller.min"
@@ -156,10 +162,8 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
 
     script = """
     const settings = await append_datatable(`$$html`, $$options, $$buttons, element);
-    const dt = settings.oInstance.api();
-    console.debug("DataTable successfully created.");
 
-    events.one('output_appended.OutputArea', () => dt.columns.adjust());
+    console.debug("DataTable successfully created.");
     """
 
     sha = hashlib.sha256(

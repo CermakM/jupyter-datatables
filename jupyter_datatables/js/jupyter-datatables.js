@@ -1,6 +1,7 @@
 define('jupyter-datatables', function (require) {
-    let DT = require("datatables.net");
+    let events = require("base/js/events");
     let d3 = require("d3");
+    let DT = require("datatables.net");
 
     let _hist_bin_fd = function(a) {
         return 2 * (d3.quantile(a, .75) - d3.quantile(a, .25)) * Math.pow(a.length, -1 / 3);
@@ -80,26 +81,82 @@ define('jupyter-datatables', function (require) {
         * @param {Object} options 
         */
     function DataPreview(settings, options) {
+        this.settings = settings;
+
         this.dt = settings.oInstance.api();
         this.data = this.dt.data();
 
-        this.preview = null;
+        this.data_preview = null;
+        this.dtype_preview = null;
 
         this.container = $(settings.nTHead);
     }
 
-    DataPreview.prototype.create_preview = function () {
-        let data_preview = $(this.dt.row(0).node())
+    DataPreview.prototype.create_row = function () {
+        let row = $(this.dt.row(0).node())
             .clone()
             .removeClass();
 
-        data_preview
+        row
             .children()
             .empty()
             .removeAttr('aria-controls')
             .removeAttr('aria-label')
-            .removeClass() // remove all classes
-            .siblings('td')
+            .removeClass(); // remove all classes
+
+        return row;
+    };
+
+    DataPreview.prototype.create_dtype_preview = function () {
+        let dtype_preview = this.create_row();
+
+        dtype_preview
+            .attr('class', 'dtype-preview')
+            .children('td')
+            .addClass('dt-head-center')
+            .addClass('column-dtype-preview');
+
+        dtype_preview.children().each((i, elt) => {
+            if ($(elt).is('th')) // skip indices
+                return;
+
+            const dtype_container = $('<div>')
+                .attr('class', 'select');
+            
+            // dtype element
+            const dtype = this.settings.aoColumns[i].sType;
+            const dtype_select = $('<select>')
+                .attr('role', 'option')
+                .attr('class', 'dtype')
+                .appendTo(dtype_container);
+
+            const dtype_options = [
+                $('<option>').attr('value', dtype).text(dtype)
+                // TODO: other options suitable for this column
+            ];
+
+            dtype_options.forEach((opt) => opt.appendTo(dtype_select));
+
+            $(elt)
+                .attr('aria-label', `dtype preview for column ${i}`)
+                .html(dtype_container);
+        });
+
+        dtype_preview.ready(() => {
+            this.dtype_preview = dtype_preview;
+
+            console.debug("dtype preview created.", this.dtype_preview);
+        });
+
+        return this;
+    };
+
+    DataPreview.prototype.create_data_preview = function () {
+        let data_preview = this.create_row();
+
+        data_preview
+            .attr('class', 'data-preview')
+            .children('td')
             .attr('role', 'figure')
             .addClass('column-data-preview');
 
@@ -109,31 +166,38 @@ define('jupyter-datatables', function (require) {
 
             const data = this.dt.column(i).data();
             $(elt)
-                .attr('aria-label', `data preview for column ${$(elt).text()}`);
+                .attr('aria-label', `data preview for column ${i}`);
 
             plot(data, elt);
         });
 
         data_preview.ready(() => {
-            this.preview = data_preview
-                .attr('class', 'data-preview')
-                .append(data_preview);
+            this.data_preview = data_preview;
 
-            console.debug("Data preview created.", this.preview);
+            console.debug("Data preview created.", this.data_preview);
         });
 
         return this;
-    }
+    };
+
+    DataPreview.prototype.create_preview = function() {
+        // column dtype
+        this.create_dtype_preview();
+        // column histogram
+        this.create_data_preview();
+
+        return this;
+    };
 
     DataPreview.prototype.draw = function () {
         return this.ready((elt) => {
             $(this.container)
-                .append(this.preview);
+                .append([this.dtype_preview, this.data_preview]);
         });
     };
 
     DataPreview.prototype.ready = function (f) {
-        return $(this.preview).ready(f);
+        return $(this.data_preview).ready(f);
     };
 
 
@@ -165,9 +229,16 @@ define('jupyter-datatables', function (require) {
                     resolve(settings);
                 }
             })
-            let dt = $(table).DataTable(options);
+            
+            let dt = $(table).DataTable(options).columns.adjust()
+                .responsive.recalc()
+                .columns.adjust();
             let btns = new $.fn.dataTable.Buttons(dt, {
                 buttons: buttons
+            });
+            
+            events.one('output_appended.OutputArea', () => {
+                setTimeout(dt.columns.adjust, 50);
             });
 
             $(dt.table().container()).prepend(btns.container());

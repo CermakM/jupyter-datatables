@@ -30,6 +30,8 @@ _DEFAULT_CONFIG = {
         'ordering': True,
         'paging': True,
 
+        'responsive': True,
+
         'scrollX': True,
         'scrollY': False,
 
@@ -37,9 +39,11 @@ _DEFAULT_CONFIG = {
     },
     'extensions': {
         'buttons': True,
+        'responsive': True,
         'scroller': True,
         'select': True
     },
+    'sample_size': 1000,
     'warnings': True,
 }
 

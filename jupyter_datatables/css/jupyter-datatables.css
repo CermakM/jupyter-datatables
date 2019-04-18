@@ -93,3 +93,18 @@ table.dataTable td.column-data-preview {
     -webkit-appearance: none;
     -moz-appearance: none;
 }
+
+.dataTables_wrapper select.dtype {
+    padding: 0 1.75rem;
+
+    font-size: 9px;
+    height: calc(1.25rem + 5px);
+
+    background: #ffdd57;
+    color: rgba(0,0,0,.7);
+
+    border: none;
+    border-radius: 0.25rem;
+
+    text-transform: uppercase;
+}
