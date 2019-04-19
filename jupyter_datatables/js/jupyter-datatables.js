@@ -3,6 +3,7 @@ define('jupyter-datatables', function (require) {
     let d3 = require("d3");
     let DT = require("datatables.net");
 
+    
     let _hist_bin_fd = function(a) {
         return 2 * (d3.quantile(a, .75) - d3.quantile(a, .25)) * Math.pow(a.length, -1 / 3);
     };
@@ -18,7 +19,7 @@ define('jupyter-datatables', function (require) {
         return bin_width_fd ? Math.min(bin_width_fd, bin_width_sturges) : bin_width_sturges;
     }
 
-    let plot = function (data, container, margin) {
+    let histogram = function (data, container, margin) {
         data = Array.prototype.map.call(data, Number).sort(d3.ascending);
 
         margin = {
@@ -32,12 +33,11 @@ define('jupyter-datatables', function (require) {
               height = 400;
         
         const n_bins = Math.ceil(( data[data.length - 1] - data[0] ) / _hist_bin_auto(data));
-
-        let svg_container = d3.select(container instanceof jQuery ? container.get(0) : container)
-            .append('div')
-            .classed('svg-container', true);
-
-        let svg = svg_container.append('svg')
+        
+        let svg_container = document.createElement('div');
+        let svg = d3.select(svg_container)
+            .classed('svg-container', true)
+            .append('svg')
             .attr('preserveAspectRatio', 'xMinYMin meet')
             .attr('viewBox', `0 0 ${width} ${height}`)
             .classed('svg-content', true);
@@ -72,160 +72,114 @@ define('jupyter-datatables', function (require) {
             .attr('fill', 'steelblue')
             .classed('bar', true);
 
-        return svg;
+        return svg_container;
     };
 
-    /**
-        * 
-        * @param {_Api} settings - DataTables settings _Api
-        * @param {Object} options 
-        */
-    function DataPreview(settings, options) {
-        this.settings = settings;
-
-        this.dt = settings.oInstance.api();
-        this.data = this.dt.data();
-
-        this.data_preview = null;
-        this.dtype_preview = null;
-
-        this.container = $(settings.nTHead);
-    }
-
-    DataPreview.prototype.create_row = function () {
-        let row = $(this.dt.row(0).node())
+    
+    $.fn.dataTable.Api.register('row.create()', function () {
+        let row = $(this.row(0).node())
             .clone()
-            .removeClass();
-
+            .removeClass()
+        
         row
             .children()
-            .empty()
-            .removeAttr('aria-controls')
-            .removeAttr('aria-label')
-            .removeClass(); // remove all classes
-
+            .empty();
+        
         return row;
+    });
+
+    let create_dtype_preview = function (dtype) {
+        const dtype_container = $('<div>')
+            .attr('class', 'dtype-container');
+
+        // dtype element
+        const dtype_select = $('<select>')
+            .attr('role', 'option')
+            .attr('class', 'dtype')
+            .appendTo(dtype_container);
+
+        const dtype_options = [
+            $('<option>').attr('value', dtype).text(dtype)
+            // TODO: other options suitable for this column
+        ];
+
+        dtype_options.forEach((opt) => opt.appendTo(dtype_select));
+        
+        return dtype_container;
     };
 
-    DataPreview.prototype.create_dtype_preview = function () {
-        let dtype_preview = this.create_row();
-
-        dtype_preview
-            .attr('class', 'dtype-preview')
-            .children('td')
-            .addClass('dt-head-center')
-            .addClass('column-dtype-preview');
-
-        dtype_preview.children().each((i, elt) => {
-            if ($(elt).is('th')) // skip indices
-                return;
-
-            const dtype_container = $('<div>')
-                .attr('class', 'select');
-            
-            // dtype element
-            const dtype = this.settings.aoColumns[i].sType;
-            const dtype_select = $('<select>')
-                .attr('role', 'option')
-                .attr('class', 'dtype')
-                .appendTo(dtype_container);
-
-            const dtype_options = [
-                $('<option>').attr('value', dtype).text(dtype)
-                // TODO: other options suitable for this column
-            ];
-
-            dtype_options.forEach((opt) => opt.appendTo(dtype_select));
-
-            $(elt)
-                .attr('aria-label', `dtype preview for column ${i}`)
-                .html(dtype_container);
-        });
-
-        dtype_preview.ready(() => {
-            this.dtype_preview = dtype_preview;
-
-            console.debug("dtype preview created.", this.dtype_preview);
-        });
-
-        return this;
+    let create_data_preview = function (data, dtype) {
+        let data_preview = null;
+        switch(dtype) {
+            case 'num':
+                data_preview = histogram(data);
+                break;
+            default:
+                data_preview = histogram(data);
+        }
+                
+        return data_preview;
     };
-
-    DataPreview.prototype.create_data_preview = function () {
-        let data_preview = this.create_row();
-
-        data_preview
-            .attr('class', 'data-preview')
-            .children('td')
-            .attr('role', 'figure')
-            .addClass('column-data-preview');
-
-        data_preview.children().each((i, elt) => {
-            if ($(elt).is('th')) // skip indices
-                return;
-
-            const data = this.dt.column(i).data();
-            $(elt)
-                .attr('aria-label', `data preview for column ${i}`);
-
-            plot(data, elt);
-        });
-
-        data_preview.ready(() => {
-            this.data_preview = data_preview;
-
-            console.debug("Data preview created.", this.data_preview);
-        });
-
-        return this;
-    };
-
-    DataPreview.prototype.create_preview = function() {
-        // column dtype
-        this.create_dtype_preview();
-        // column histogram
-        this.create_data_preview();
-
-        return this;
-    };
-
-    DataPreview.prototype.draw = function () {
-        return this.ready((elt) => {
-            $(this.container)
-                .append([this.dtype_preview, this.data_preview]);
-        });
-    };
-
-    DataPreview.prototype.ready = function (f) {
-        return $(this.data_preview).ready(f);
-    };
-
-
-    $.fn.dataTable.DataPreview = DataPreview;
-    $.fn.DataTable.DataPreview = $.fn.dataTable.DataPreview;
-
-    $.fn.dataTable.ext.previews = {};
-
 
     let create_datatable = function (table, options, buttons) {
         return new Promise((resolve) => {
             Object.assign(options, {
                 fnInitComplete: function (settings) {
-                    let previews = $.fn.dataTable.ext.previews;
-                    let table_id = settings.sTableId;
+                    let dt = settings.oInstance.api();
 
-                    let dataPreview = null;
-                    if (!_.has(previews, table_id)) {
-                        console.debug('Data preview initialization.', settings);
+                    console.debug('dtype preview initialization.', settings);
+                    
+                    let dtype_preview_row = dt.row.create()
+                        .removeAttr('aria-label')
+                        .attr('class', 'dtype-preview');
 
-                        dataPreview = new $.fn.dataTable.DataPreview(settings);
-                        previews[table_id] = dataPreview.create_preview();
-                    } else {
-                        dataPreview = previews[settings.sTableId];
-                    }
+                    dtype_preview_row
+                        .children().each((i, e) => {
+                            if ($(e).is('th'))
+                                return;
+                        
+                            let dtype = settings.aoColumns[i].sType;
+                            let dtype_preview = create_dtype_preview(dtype);
+                        
+                            console.log(dtype_preview);
 
-                    dataPreview.draw();
+                            $(e)
+                                .attr('class', 'column-dtype-preview dt-head-center')
+                                .attr('aria-label', `dtype preview for column ${i}`)
+                                .append(dtype_preview);
+                        });
+                    
+                    dtype_preview_row.ready(() => {
+                        $(settings.nTHead).append(dtype_preview_row);
+                    });
+                    
+                    console.debug('Data preview initialization.', settings);
+                    
+                    let data_preview_row = dt.row.create()
+                        .removeAttr('aria-controls')
+                        .removeAttr('aria-label')
+                        .attr('class', 'column-data-preview');
 
+                    data_preview_row
+                        .children().each((i, e) => {
+                            if ($(e).is('th')) return;
+                        
+                            $(e)
+                            .attr('class', 'column-data-preview')
+                            .attr('role', 'figure')
+                            .attr('aria-label', `data preview for column ${i}`);
+
+                            let dtype = settings.aoColumns[i].sType;
+                            let data  =  dt.column(i).data();
+                            let data_preview = create_data_preview(data, dtype);
+                        
+                            $(e).append(data_preview);
+                        });
+                    
+                    data_preview_row.ready(() => {
+                        $(settings.nTHead).append(data_preview_row);
+                    });
+                    
                     resolve(settings);
                 }
             })
