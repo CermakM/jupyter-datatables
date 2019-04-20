@@ -156,6 +156,9 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
         options = {}
         options.update(config.defaults.options)
 
+    # column types
+    options.update({'columnDefs': _get_columns_defs(self, options)})
+
     # pop buttons, we need to use them separately
     buttons = options.pop("buttons", [])
     classes = classes if classes is not None else " ".join(config.defaults.classes)
@@ -206,3 +209,28 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
         msg = f"Sample of size {config.defaults.sample_size} out of {len(self)}"
 
     return msg
+
+
+def _get_columns_defs(df: pd.DataFrame, options: dict = None):
+    """Create column defs to be used by DataTable constructor."""
+    options = options or {}
+
+    idx_cols = df.index.names
+    col_defs = list(options.get('columnDefs', []))
+
+    for i, dtype in enumerate(map(str, df.dtypes)):
+        col_idx = i + len(idx_cols)
+        col_def = {}
+
+        append = True
+        for d in col_defs:
+            if d.get('targets', None) == col_idx:
+                append = False
+                col_def = d
+                break
+
+        col_def.update(type=dtype, targets=col_idx)
+        if append:
+            col_defs.append(col_def)
+    
+    return col_defs

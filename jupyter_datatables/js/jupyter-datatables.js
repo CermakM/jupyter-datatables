@@ -122,7 +122,18 @@ define('jupyter-datatables', function (require) {
         return svg_container;
     };
 
-    
+    const dtype_map = new Map();
+    ['bool'].forEach((dtype) => dtype_map.set(dtype, 'bool'));  // bool
+    ['object', 'string'].forEach(
+        (dtype) => dtype_map.set(dtype, 'string')
+    );  // string
+    ['int8, int16, int32, int64', 'float8, float16, float32, float64'].forEach(
+        (dtype) => dtype_map.set(dtype, 'num')
+    );  // number
+    ['datetime8[ns]', 'datetime16[ns]', 'datetime32[ns]', 'datetime64[ns]'].forEach(
+        (dtype) => dtype_map.set(dtype, 'date')
+    );  // date
+
     $.fn.dataTable.Api.register('row.create()', function () {
         let row = $(this.row(0).node())
             .clone()
@@ -218,6 +229,9 @@ define('jupyter-datatables', function (require) {
                                 .attr('class', 'column-dtype-preview dt-head-center')
                                 .attr('aria-label', `dtype preview for column ${i}`)
                                 .append(dtype_preview);
+
+                            // map dtype back to known format
+                            settings.columns(i).type = dtype_map.get(dtype) || null;
                         });
                     
                     dtype_preview_row.ready(() => {
