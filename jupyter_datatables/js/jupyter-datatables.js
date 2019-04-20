@@ -176,6 +176,24 @@ define('jupyter-datatables', function (require) {
         return data_preview;
     };
 
+
+    /**
+     * Boolean type detector
+     */
+    $.fn.dataTable.ext.type.detect.unshift(function (data) {
+        const dtype = 'boolean';
+
+        if (_.isBoolean(data)) {
+            return dtype;
+        }
+        else if (_.isString(data)) {
+            return (/true|false/i).test(data.toLowerCase()) ? dtype : null;
+        }
+
+        return null;
+    });
+
+
     let create_datatable = function (table, options, buttons) {
         return new Promise((resolve) => {
             Object.assign(options, {
