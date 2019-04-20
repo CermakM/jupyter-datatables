@@ -123,7 +123,7 @@ define('jupyter-datatables', function (require) {
     };
 
     const dtype_map = new Map();
-    ['bool'].forEach((dtype) => dtype_map.set(dtype, 'bool'));  // bool
+    ['bool'].forEach((dtype) => dtype_map.set(dtype, 'boolean'));  // bool
     ['object', 'string'].forEach(
         (dtype) => dtype_map.set(dtype, 'string')
     );  // string
@@ -231,7 +231,8 @@ define('jupyter-datatables', function (require) {
                                 .append(dtype_preview);
 
                             // map dtype back to known format
-                            settings.columns(i).type = dtype_map.get(dtype) || null;
+                            // TODO: run type detectors instead of assuming 'num'
+                            settings.aoColumns[i].sType = dtype_map.get(dtype) || 'num';
                         });
                     
                     dtype_preview_row.ready(() => {
