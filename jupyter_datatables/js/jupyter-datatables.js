@@ -19,7 +19,7 @@ define('jupyter-datatables', function (require) {
         return bin_width_fd ? Math.min(bin_width_fd, bin_width_sturges) : bin_width_sturges;
     }
 
-    let histogram = function (data, container, margin) {
+    let histogram = function (data, margin) {
         data = Array.prototype.map.call(data, Number).sort(d3.ascending);
 
         margin = {
@@ -75,6 +75,53 @@ define('jupyter-datatables', function (require) {
         return svg_container;
     };
 
+    let bar = function (data, margin) {
+        margin = {
+            left: 5,
+            right: 5,
+            top: 10,
+            bottom: 10
+        };
+
+        const width  = 600,
+              height = 400;
+
+        let svg_container = document.createElement('div');
+        let svg = d3.select(svg_container)
+            .classed('svg-container', true)
+            .append('svg')
+            .attr('preserveAspectRatio', 'xMinYMin meet')
+            .attr('viewBox', `0 0 ${width} ${height}`)
+            .classed('svg-content', true);
+
+        let g = svg
+            .append('g')
+            .classed('bars', true);
+
+        let x_range = d3.scaleBand()
+            .domain(data.map( (d) => d.key ))
+            .range([0, width])
+            .padding(0.1);
+
+        let y_range = d3.scaleLinear()
+            .domain([0, d3.max(data, (d) => d.value )])
+            .nice()
+            .range([height, 0]); // reverse the domain
+
+        g.selectAll('.bar')
+            .data(data)
+            .enter()
+            .append('rect')
+            .attr('x', (d) => x_range(d.key))
+            .attr('y', (d) => y_range(d.value))
+            .attr('width', x_range.bandwidth())
+            .attr('height', (d) => y_range(0) - y_range(d.value))
+            .attr('fill', 'steelblue')
+            .classed('bar', true);
+
+        return svg_container;
+    };
+
     
     $.fn.dataTable.Api.register('row.create()', function () {
         let row = $(this.row(0).node())
@@ -110,12 +157,20 @@ define('jupyter-datatables', function (require) {
 
     let create_data_preview = function (data, dtype) {
         let data_preview = null;
-        switch(dtype) {
+        switch(dtype.toLowerCase()) {
             case 'num':
                 data_preview = histogram(data);
                 break;
+            case 'string':
+                const grouped = d3.nest()
+                    .key( (d) => d )
+                    .rollup( (d) => d.length)
+                    .entries(data);
+                
+                data_preview = bar(grouped);
+                break;
             default:
-                data_preview = histogram(data);
+                data_preview = bar(data);
         }
                 
         return data_preview;
@@ -140,8 +195,6 @@ define('jupyter-datatables', function (require) {
                         
                             let dtype = settings.aoColumns[i].sType;
                             let dtype_preview = create_dtype_preview(dtype);
-                        
-                            console.log(dtype_preview);
 
                             $(e)
                                 .attr('class', 'column-dtype-preview dt-head-center')
