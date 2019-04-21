@@ -2,6 +2,7 @@ ipython
 ipykernel
 
 pandas
+scipy
 
 # nbextensions
 jupyter-require>=0.2.1
