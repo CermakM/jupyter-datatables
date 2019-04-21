@@ -75,8 +75,16 @@ define('jupyter-datatables', function (require) {
         return svg_container;
     };
 
-    let bar = function (data, margin) {
-        margin = {
+    let bar = function (x, y) {
+        if (_.isUndefined(y)) {
+            y = x;
+            x = [...Array(y.length).keys()];
+        }
+
+        const data = d3.zip(x, y)
+            .map( (v) => _.object(['x', 'y'], v) );
+
+        const margin = {
             left: 5,
             right: 5,
             top: 10,
@@ -99,12 +107,12 @@ define('jupyter-datatables', function (require) {
             .classed('bars', true);
 
         let x_range = d3.scaleBand()
-            .domain(data.map( (d) => d.key ))
+            .domain(x)
             .range([0, width])
             .padding(0.1);
 
         let y_range = d3.scaleLinear()
-            .domain([0, d3.max(data, (d) => d.value )])
+            .domain([0, d3.max(y)])
             .nice()
             .range([height, 0]); // reverse the domain
 
@@ -112,10 +120,10 @@ define('jupyter-datatables', function (require) {
             .data(data)
             .enter()
             .append('rect')
-            .attr('x', (d) => x_range(d.key))
-            .attr('y', (d) => y_range(d.value))
+            .attr('x', (d) => x_range(d.x))
+            .attr('y', (d) => y_range(d.y))
             .attr('width', x_range.bandwidth())
-            .attr('height', (d) => y_range(0) - y_range(d.value))
+            .attr('height', (d) => y_range(0) - y_range(d.y))
             .attr('fill', 'steelblue')
             .classed('bar', true);
 
@@ -168,17 +176,23 @@ define('jupyter-datatables', function (require) {
 
     let create_data_preview = function (data, dtype) {
         let data_preview = null;
-        switch(dtype.toLowerCase()) {
+        
+        const grouped = d3.nest()
+            .key( (d) => d )
+            .rollup( (d) => d.length)
+            .entries(data);
+        
+        switch(dtype) {
             case 'num':
-                data_preview = histogram(data);
+                data_preview = grouped.length <= 10 ? bar(grouped.map( (d) => d.value) ) : histogram(data);
                 break;
+            case 'boolean':
+                // fall-through
             case 'string':
-                const grouped = d3.nest()
-                    .key( (d) => d )
-                    .rollup( (d) => d.length)
-                    .entries(data);
+                const x = grouped.map( (d) => d.key );
+                const y = grouped.map( (d) => d.value );
                 
-                data_preview = bar(grouped);
+                data_preview = bar(x, y);
                 break;
             default:
                 data_preview = bar(data);
@@ -256,7 +270,7 @@ define('jupyter-datatables', function (require) {
                             .attr('aria-label', `data preview for column ${i}`);
 
                             let dtype = settings.aoColumns[i].sType;
-                            let data  =  dt.column(i).data();
+                            let data  =  dt.column(i).data().toArray();
                             let data_preview = create_data_preview(data, dtype);
                         
                             $(e).append(data_preview);
