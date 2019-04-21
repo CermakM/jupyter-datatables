@@ -25,6 +25,8 @@
 
 import hashlib
 import json
+import math
+import typing
 
 import pandas as pd
 
@@ -43,7 +45,9 @@ from jupyter_require import safe_execute
 from jupyter_require import execute_with_requirements
 
 from . import config
+from .__about__ import __version__
 
+__all__ = ['config', 'init_datatables_mode', '__version__']
 
 _HERE = Path(__file__).parent
 
@@ -168,13 +172,23 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
 
     console.debug("DataTable successfully created.");
     """
+    # compute the sample size, it will be used for the data preview
+    # to speed up computation
+    n = len(self)
+    sample_size = n
+    if n > config.defaults.limit:
+        sample_size = getattr(config.defaults, 'sample_size', None) or min([
+            n, _calculate_sample_size(n)
+        ])
+
+    df = self[:sample_size]  # TODO: smarter way to choose the sample
 
     sha = hashlib.sha256(
-        self.sample(min(len(self), config.defaults.sample_size)).to_json().encode()
+        df.to_json().encode()
     )
     digest = sha.hexdigest()
 
-    html = self.to_html(classes=classes, table_id=digest)
+    html = df.to_html(classes=classes, table_id=digest)
 
     execute_with_requirements(
         script,
@@ -204,11 +218,14 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
 
     safe_execute(safe_script, table_id=digest)
 
-    msg = ""
-    if config.defaults.sample_size < len(self):
-        msg = f"Sample of size {config.defaults.sample_size} out of {len(self)}"
+    return f"""
+        const sample_size = Number({sample_size}).toLocaleString();
+        const total = Number({n}).toLocaleString();
 
-    return msg
+        element.append($('<p>').text(
+            `Sample size: ${{sample_size}} out of ${{total}}`));
+    """
+
 
 
 def _get_columns_defs(df: pd.DataFrame, options: dict = None):
@@ -234,3 +251,29 @@ def _get_columns_defs(df: pd.DataFrame, options: dict = None):
             col_defs.append(col_def)
     
     return col_defs
+
+
+def _calculate_sample_size(n, p: float = 0.975, e: float = 0.02) -> int:
+    """Calculate representative sample size."""
+    try:
+        from scipy import stats as st
+    except ImportError:
+        return math.sqrt(n)
+
+    z = st.norm.ppf(1 - (1 - p) / 2)
+    u = z**2 * p * (1 - p) / e**2
+
+    return _smart_ceil(u / (1 + u * math.pow(n, -1)))
+
+
+def _smart_ceil(x: typing.Union[int, float], order: int = None) -> int:
+    """Smart ceil to the nearest round integer.
+    
+    The 'nearest' is chosen based on the order of the given number
+    """
+    order = int(order) if order else len(str(math.ceil(x)))
+    if order <= 0:
+        raise ValueError("`order` must be integer >= 0")
+    mod = math.pow(10, min([order, 3]))
+    
+    return int(x if x % mod == 0 else x + mod - x % mod)

@@ -24,7 +24,7 @@ _DEFAULT_CONFIG = {
             }
         ],
         'buttons': [
-            'print', 'csv', 'pdf'  # FIXME: unstable, 'excel' button does not appear at all
+            'print', 'csv', 'pdf'
         ],
 
         'ordering': True,
@@ -43,7 +43,8 @@ _DEFAULT_CONFIG = {
         'scroller': True,
         'select': True
     },
-    'sample_size': 1000,
+    'limit': 1000,  # beyond this limit a sample is taken
+    'sample_size': None,
     'warnings': True,
 }
 
