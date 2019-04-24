@@ -253,14 +253,19 @@ def _get_columns_defs(df: pd.DataFrame, options: dict = None):
     return col_defs
 
 
-def _calculate_sample_size(n, p: float = 0.975, e: float = 0.02) -> int:
-    """Calculate representative sample size."""
+def _calculate_sample_size(n, ci: float = 0.975, e: float = 0.02, p: float = 0.5) -> int:
+    """Calculate representative sample size.
+
+    :param ci: float, confidence interval, default = 0.975
+    :param e: float, margin of error, default = 0.02
+    :param p: float, population proportion, default = 0.5
+    """
     try:
         from scipy import stats as st
     except ImportError:
         return math.sqrt(n)
 
-    z = st.norm.ppf(1 - (1 - p) / 2)
+    z = st.norm.ppf(1 - (1 - ci) / 2)
     u = z**2 * p * (1 - p) / e**2
 
     return _smart_ceil(u / (1 + u * math.pow(n, -1)))
