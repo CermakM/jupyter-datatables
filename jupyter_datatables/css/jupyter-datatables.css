@@ -4,6 +4,11 @@
  * @file main.css
  */
 
+ .svg-container {
+     width: 120px;
+
+     margin: auto;
+ }
 
 .dt-buttons {
     padding-right: 10px;
