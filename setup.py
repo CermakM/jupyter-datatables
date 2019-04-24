@@ -51,7 +51,7 @@ setup(
     include_package_data=True,
 
     package_data={
-        NAME: ["css/*.css"]
+        NAME: ["css/*.css", "js/*.js"]
     },
 
     zip_safe=False
