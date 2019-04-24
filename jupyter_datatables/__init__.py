@@ -168,7 +168,7 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
     classes = classes if classes is not None else " ".join(config.defaults.classes)
 
     script = """
-    const settings = await append_datatable(`$$html`, $$options, $$buttons, element);
+    const settings = await appendDataTable(`$$html`, $$options, $$buttons, element);
 
     console.debug("DataTable successfully created.");
     """

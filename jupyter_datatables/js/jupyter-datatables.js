@@ -1,388 +1,386 @@
 define('jupyter-datatables', function (require) {
-    require("datatables.net");
+  require('datatables.net')
 
-    let events = require("base/js/events");
-    let d3 = require("d3");
+  let _ = require('underscore')
+  let events = require('base/js/events')
+  let d3 = require('d3')
 
-    const PLOT_WIDTH  = 600,
-          PLOT_HEIGHT = 400;
+  const PLOT_WIDTH = 600
 
-    const PLOT_MARGIN = { left: 5, right: 5, top: 10, bottom: 10 };
+  const PLOT_HEIGHT = 400
 
+  const PLOT_MARGIN = { left: 5, right: 5, top: 10, bottom: 10 }
 
-    let _hist_bin_fd = function(a) {
-        return 2 * (d3.quantile(a, .75) - d3.quantile(a, .25)) * Math.pow(a.length, -1 / 3);
-    };
+  let histBinFreedman = function (a) {
+    return 2 * (d3.quantile(a, 0.75) - d3.quantile(a, 0.25)) * Math.pow(a.length, -1 / 3)
+  }
 
-    let _hist_bin_sturges = function(a) {
-        return ( a[a.length - 1] - a[0] ) / ( Math.log2(a.length) + 1);
-    };
+  let histBinSturges = function (a) {
+    return (a[a.length - 1] - a[0]) / (Math.log2(a.length) + 1)
+  }
 
-    let _hist_bin_auto = function(a) {
-        const bin_width_fd = _hist_bin_fd(a),
-              bin_width_sturges = _hist_bin_sturges(a);
+  let histBinAuto = function (a) {
+    const binWidthfd = histBinFreedman(a)
 
-        return bin_width_fd ? Math.min(bin_width_fd, bin_width_sturges) : bin_width_sturges;
+    const binWidthSturges = histBinSturges(a)
+
+    return binWidthfd ? Math.min(binWidthfd, binWidthSturges) : binWidthSturges
+  }
+
+  let plotHistogram = function (data) {
+    data = Array.prototype.map.call(data, Number).sort(d3.ascending)
+
+    const nBins = Math.ceil((data[data.length - 1] - data[0]) / histBinAuto(data))
+
+    let svgContainer = document.createElement('div')
+    let svg = d3.select(svgContainer)
+      .classed('svg-container', true)
+      .append('svg')
+      .attr('preserveAspectRatio', 'xMinYMin meet')
+      .attr('viewBox', `0 0 ${PLOT_WIDTH} ${PLOT_HEIGHT}`)
+      .classed('svg-content', true)
+
+    let g = svg
+      .append('g')
+      .classed('bars', true)
+
+    let xScale = d3.scaleLinear()
+      .domain(d3.extent(data))
+      .nice()
+      .range([0, PLOT_WIDTH])
+
+    let bins = d3.histogram()
+      .domain(xScale.domain())
+      .thresholds(xScale.ticks(nBins))
+      (data)
+
+    let yScale = d3.scaleLinear()
+      .domain([0, d3.max(bins, d => d.length)])
+      .nice()
+      .range([PLOT_HEIGHT - PLOT_MARGIN.bottom, PLOT_MARGIN.top])
+
+    g.selectAll('.bar')
+      .data(bins)
+      .enter()
+      .append('rect')
+      .attr('x', (d) => xScale(d.x0) + 1.5)
+      .attr('y', (d) => yScale(d.length))
+      .attr('width', (d) => Math.max(0, xScale(d.x1) - xScale(d.x0)))
+      .attr('height', (d) => yScale(0) - yScale(d.length))
+      .attr('fill', 'steelblue')
+      .classed('bar', true)
+
+    return svgContainer
+  }
+
+  let plotBar = function (x, y) {
+    if (_.isUndefined(y)) {
+      y = x
+      x = [...Array(y.length).keys()]
     }
 
-    let plot_histogram = function (data) {
-        data = Array.prototype.map.call(data, Number).sort(d3.ascending);
+    const data = d3.zip(x, y)
+      .map((v) => _.object(['x', 'y'], v))
 
-        const n_bins = Math.ceil(( data[data.length - 1] - data[0] ) / _hist_bin_auto(data));
+    let svgContainer = document.createElement('div')
+    let svg = d3.select(svgContainer)
+      .classed('svg-container', true)
+      .append('svg')
+      .attr('preserveAspectRatio', 'xMinYMin meet')
+      .attr('viewBox', `0 0 ${PLOT_WIDTH} ${PLOT_HEIGHT}`)
+      .classed('svg-content', true)
 
-        let svg_container = document.createElement('div');
-        let svg = d3.select(svg_container)
-            .classed('svg-container', true)
-            .append('svg')
-            .attr('preserveAspectRatio', 'xMinYMin meet')
-            .attr('viewBox', `0 0 ${PLOT_WIDTH} ${PLOT_HEIGHT}`)
-            .classed('svg-content', true);
+    let g = svg
+      .append('g')
+      .classed('bars', true)
 
-        let g = svg
-            .append('g')
-            .classed('bars', true);
+    let xScale = d3.scaleBand()
+      .domain(x)
+      .range([PLOT_MARGIN.left, PLOT_WIDTH - PLOT_MARGIN.right])
+      .padding(0.1)
 
-        let x_range = d3.scaleLinear()
-            .domain(d3.extent(data))
-            .nice()
-            .range([0, PLOT_WIDTH]);
+    let yScale = d3.scaleLinear()
+      .domain([0, d3.max(y)])
+      .nice()
+      .range([PLOT_HEIGHT - PLOT_MARGIN.bottom, PLOT_MARGIN.top])
 
-        let bins = d3.histogram()
-            .domain(x_range.domain())
-            .thresholds(x_range.ticks(n_bins))
-            (data);
+    g.selectAll('.bar')
+      .data(data)
+      .enter()
+      .append('rect')
+      .attr('x', (d) => xScale(d.x))
+      .attr('y', (d) => yScale(d.y))
+      .attr('width', xScale.bandwidth())
+      .attr('height', (d) => yScale(0) - yScale(d.y))
+      .attr('fill', 'steelblue')
+      .classed('bar', true)
 
-        let y_range = d3.scaleLinear()
-            .domain([0, d3.max(bins, d => d.length)])
-            .nice()
-            .range([PLOT_HEIGHT - PLOT_MARGIN.bottom, PLOT_MARGIN.top]);
+    return svgContainer
+  }
 
-        g.selectAll('.bar')
-            .data(bins)
-            .enter()
-            .append('rect')
-            .attr('x', (d) => x_range(d.x0) + 1.5)
-            .attr('y', (d) => y_range(d.length))
-            .attr('width', (d) => Math.max(0, x_range(d.x1) - x_range(d.x0)))
-            .attr('height', (d) => y_range(0) - y_range(d.length))
-            .attr('fill', 'steelblue')
-            .classed('bar', true);
-
-        return svg_container;
-    };
-
-    let plot_bar = function (x, y) {
-        if (_.isUndefined(y)) {
-            y = x;
-            x = [...Array(y.length).keys()];
-        }
-
-        const data = d3.zip(x, y)
-            .map( (v) => _.object(['x', 'y'], v) );
-
-        let svg_container = document.createElement('div');
-        let svg = d3.select(svg_container)
-            .classed('svg-container', true)
-            .append('svg')
-            .attr('preserveAspectRatio', 'xMinYMin meet')
-            .attr('viewBox', `0 0 ${PLOT_WIDTH} ${PLOT_HEIGHT}`)
-            .classed('svg-content', true);
-
-        let g = svg
-            .append('g')
-            .classed('bars', true);
-
-        let x_range = d3.scaleBand()
-            .domain(x)
-            .range([PLOT_MARGIN.left, PLOT_WIDTH - PLOT_MARGIN.right])
-            .padding(0.1);
-
-        let y_range = d3.scaleLinear()
-            .domain([0, d3.max(y)])
-            .nice()
-            .range([PLOT_HEIGHT - PLOT_MARGIN.bottom, PLOT_MARGIN.top]);
-
-        g.selectAll('.bar')
-            .data(data)
-            .enter()
-            .append('rect')
-            .attr('x', (d) => x_range(d.x))
-            .attr('y', (d) => y_range(d.y))
-            .attr('width', x_range.bandwidth())
-            .attr('height', (d) => y_range(0) - y_range(d.y))
-            .attr('fill', 'steelblue')
-            .classed('bar', true);
-
-        return svg_container;
-    };
-
-    let plot_timeseries = function(x, y) {
-        if (_.isUndefined(y)) {
-            y = x;
-            x = [...Array(y.length).keys()];
-        }
-
-        const data = d3.zip(x, y)
-            .map( (v) => _.object(['x', 'y'], v) );
-
-        const radius = 7;  // circle radius
-
-        let svg_container = document.createElement('div');
-        let svg = d3.select(svg_container)
-            .classed('svg-container', true)
-            .append('svg')
-            .attr('preserveAspectRatio', 'xMinYMin meet')
-            .attr('viewBox', `0 0 ${PLOT_WIDTH} ${PLOT_HEIGHT}`)
-            .classed('svg-content', true);
-
-        let g = svg
-            .append('g')
-            .classed('timeseries', true);
-
-        let x_scale = d3.scaleTime()
-            .domain(d3.extent(data, (d) => d.x))
-            .nice()
-            .range([PLOT_MARGIN.left, PLOT_WIDTH - PLOT_MARGIN.right]);
-
-        let y_scale = d3.scaleLinear()
-            .domain([0, d3.max(data, (d) => d.y)])
-            .nice()
-            .range([PLOT_HEIGHT - PLOT_MARGIN.bottom, PLOT_MARGIN.top]);
-        
-        let area_path = d3.area()
-            .x( (d) => x_scale(d.x) )
-            .y0( PLOT_HEIGHT )
-            .y1( (d) => y_scale(d.y) )
-            (data);
-
-        let line_path = d3.line()
-            .x( (d) => x_scale(d.x) )
-            .y( (d) => y_scale(d.y) )
-            (data);
-
-        g.append('path')
-            .classed('area', true)
-            .attr('d', area_path)
-            .attr('fill', 'lightsteelblue');
-
-        g.append('path')
-            .classed('line', true)
-            .attr('d', line_path)
-            .attr('fill', 'none')
-            .attr('stroke', "steelblue")
-            .attr('stroke-width', 5);
-
-        g.selectAll('circle')
-            .data(data)
-            .enter()
-            .append('circle')
-            .attr('cx', (d) => x_scale(d.x))
-            .attr('cy', (d) => y_scale(d.y))
-            .attr('r', radius)
-            .attr('fill', 'steelblue');
-        
-        return svg_container;
+  let plotTimeseries = function (x, y) {
+    if (_.isUndefined(y)) {
+      y = x
+      x = [...Array(y.length).keys()]
     }
 
-    const dtype_map = new Map();
-    ['bool'].forEach((dtype) => dtype_map.set(dtype, 'boolean'));  // bool
-    ['object', 'string'].forEach(
-        (dtype) => dtype_map.set(dtype, 'string')
-    );  // string
-    ['int8, int16, int32, int64', 'float8, float16, float32, float64'].forEach(
-        (dtype) => dtype_map.set(dtype, 'num')
-    );  // number
-    ['datetime8[ns]', 'datetime16[ns]', 'datetime32[ns]', 'datetime64[ns]'].forEach(
-        (dtype) => dtype_map.set(dtype, 'date')
-    );  // date
+    const data = d3.zip(x, y)
+      .map((v) => _.object(['x', 'y'], v))
 
-    $.fn.dataTable.Api.register('row.create()', function () {
-        let row = $(this.row(0).node())
-            .clone()
-            .removeClass()
+    const radius = 7 // circle radius
 
-        row
-            .children()
-            .empty();
+    let svgContainer = document.createElement('div')
+    let svg = d3.select(svgContainer)
+      .classed('svg-container', true)
+      .append('svg')
+      .attr('preserveAspectRatio', 'xMinYMin meet')
+      .attr('viewBox', `0 0 ${PLOT_WIDTH} ${PLOT_HEIGHT}`)
+      .classed('svg-content', true)
 
-        return row;
-    });
+    let g = svg
+      .append('g')
+      .classed('timeseries', true)
 
-    let create_dtype_preview = function (dtype) {
-        const dtype_container = $('<div>')
-            .attr('class', 'dtype-container');
+    let xScale = d3.scaleTime()
+      .domain(d3.extent(data, (d) => d.x))
+      .nice()
+      .range([PLOT_MARGIN.left, PLOT_WIDTH - PLOT_MARGIN.right])
 
-        // dtype element
-        const dtype_select = $('<select>')
-            .attr('role', 'option')
-            .attr('class', 'dtype')
-            .appendTo(dtype_container);
+    let yScale = d3.scaleLinear()
+      .domain([0, d3.max(data, (d) => d.y)])
+      .nice()
+      .range([PLOT_HEIGHT - PLOT_MARGIN.bottom, PLOT_MARGIN.top])
 
-        const dtype_options = [
-            $('<option>').attr('value', dtype).text(dtype)
-            // TODO: other options suitable for this column
-        ];
+    let areaPath = d3.area()
+      .x((d) => xScale(d.x))
+      .y0(PLOT_HEIGHT)
+      .y1((d) => yScale(d.y))
+      (data)
 
-        dtype_options.forEach((opt) => opt.appendTo(dtype_select));
+    let linePath = d3.line()
+      .x((d) => xScale(d.x))
+      .y((d) => yScale(d.y))
+      (data)
 
-        return dtype_container;
-    };
+    g.append('path')
+      .classed('area', true)
+      .attr('d', areaPath)
+      .attr('fill', 'lightsteelblue')
 
-    let create_data_preview = function (data, dtype) {
-        let data_preview = null;
+    g.append('path')
+      .classed('line', true)
+      .attr('d', linePath)
+      .attr('fill', 'none')
+      .attr('stroke', 'steelblue')
+      .attr('stroke-width', 5)
 
-        const grouped = d3.nest()
-            .key( (d) => d )
-            .rollup( (d) => d.length)
-            .entries(data);
+    g.selectAll('circle')
+      .data(data)
+      .enter()
+      .append('circle')
+      .attr('cx', (d) => xScale(d.x))
+      .attr('cy', (d) => yScale(d.y))
+      .attr('r', radius)
+      .attr('fill', 'steelblue')
 
-        switch(dtype) {
-            case 'num':
-                data_preview = grouped.length <= 10 ? plot_bar(grouped.map( (d) => d.value) ) : plot_histogram(data);
-                break;
-            case 'boolean':
-                // fall-through
-            case 'string':
-                data_preview = plot_bar(
-                    grouped.map( (d) => d.key ),
-                    grouped.map( (d) => d.value )
-                );
-                break;
-            case 'date':
-                console.log(data);
-                data_preview = plot_timeseries(
-                    grouped.map( (d) => new Date(d.key) ),
-                    grouped.map( (d) => d.value )
-                );
-                break
-            default:
-                data_preview = plot_histogram(data);
-        }
+    return svgContainer
+  }
 
-        return data_preview;
-    };
+  const dTypeMap = new Map();
+  ['bool'].forEach((dtype) => dTypeMap.set(dtype, 'boolean')); // bool
+  ['object', 'string'].forEach(
+    (dtype) => dTypeMap.set(dtype, 'string')
+  ); // string
+  ['int8, int16, int32, int64', 'float8, float16, float32, float64'].forEach(
+    (dtype) => dTypeMap.set(dtype, 'num')
+  ); // number
+  ['datetime8[ns]', 'datetime16[ns]', 'datetime32[ns]', 'datetime64[ns]'].forEach(
+    (dtype) => dTypeMap.set(dtype, 'date')
+  ) // date
 
+  $.fn.dataTable.Api.register('row.create()', function () {
+    let row = $(this.row(0).node())
+      .clone()
+      .removeClass()
 
-    /**
+    row
+      .children()
+      .empty()
+
+    return row
+  })
+
+  let createDTypePreview = function (dtype) {
+    const dTypeContainer = $('<div>')
+      .attr('class', 'dtype-container')
+
+    // dtype element
+    const dTypeSelect = $('<select>')
+      .attr('role', 'option')
+      .attr('class', 'dtype')
+      .appendTo(dTypeContainer)
+
+    const dTypeOptions = [
+      $('<option>').attr('value', dtype).text(dtype)
+      // TODO: other options suitable for this column
+    ]
+
+    dTypeOptions.forEach((opt) => opt.appendTo(dTypeSelect))
+
+    return dTypeContainer
+  }
+
+  let createDataPreview = function (data, dtype) {
+    let dataPreview = null
+
+    const grouped = d3.nest()
+      .key((d) => d)
+      .rollup((d) => d.length)
+      .entries(data)
+
+    switch (dtype) {
+      case 'num':
+        dataPreview = grouped.length <= 10 ? plotBar(grouped.map((d) => d.value)) : plotHistogram(data)
+        break
+      case 'boolean':
+        // fall-through
+      case 'string':
+        dataPreview = plotBar(
+          grouped.map((d) => d.key),
+          grouped.map((d) => d.value)
+        )
+        break
+      case 'date':
+        console.log(data)
+        dataPreview = plotTimeseries(
+          grouped.map((d) => new Date(d.key)),
+          grouped.map((d) => d.value)
+        )
+        break
+      default:
+        dataPreview = plotHistogram(data)
+    }
+
+    return dataPreview
+  }
+
+  /**
      * Boolean type detector
      */
-    $.fn.dataTable.ext.type.detect.unshift(function (data) {
-        const dtype = 'boolean';
+  $.fn.dataTable.ext.type.detect.unshift(function (data) {
+    const dtype = 'boolean'
 
-        if (_.isBoolean(data)) {
-            return dtype;
-        }
-        else if (_.isString(data)) {
-            return (/true|false/i).test(data.toLowerCase()) ? dtype : null;
-        }
+    if (_.isBoolean(data)) {
+      return dtype
+    } else if (_.isString(data)) {
+      return (/true|false/i).test(data.toLowerCase()) ? dtype : null
+    }
 
-        return null;
-    });
+    return null
+  })
 
+  let createDataTable = function (table, options, buttons) {
+    return new Promise((resolve) => {
+      Object.assign(options, {
+        fnInitComplete: function (settings) {
+          let dt = settings.oInstance.api()
 
-    let create_datatable = function (table, options, buttons) {
-        return new Promise((resolve) => {
-            Object.assign(options, {
-                fnInitComplete: function (settings) {
-                    let dt = settings.oInstance.api();
+          console.debug('dtype preview initialization.', settings)
 
-                    console.debug('dtype preview initialization.', settings);
+          let dTypePreviewRow = dt.row.create()
+            .removeAttr('aria-label')
+            .attr('class', 'dtype-preview')
 
-                    let dtype_preview_row = dt.row.create()
-                        .removeAttr('aria-label')
-                        .attr('class', 'dtype-preview');
+          dTypePreviewRow
+            .children().each((i, e) => {
+              if ($(e).is('th')) { return }
 
-                    dtype_preview_row
-                        .children().each((i, e) => {
-                            if ($(e).is('th'))
-                                return;
+              let dtype = settings.aoColumns[i].sType
+              let dTypePreview = createDTypePreview(dtype)
 
-                            let dtype = settings.aoColumns[i].sType;
-                            let dtype_preview = create_dtype_preview(dtype);
+              $(e)
+                .attr('class', 'column-dtype-preview dt-head-center')
+                .attr('aria-label', `dtype preview for column ${i}`)
+                .append(dTypePreview)
 
-                            $(e)
-                                .attr('class', 'column-dtype-preview dt-head-center')
-                                .attr('aria-label', `dtype preview for column ${i}`)
-                                .append(dtype_preview);
-
-                            // map dtype back to known format
-                            // TODO: run type detectors instead of assuming 'num'
-                            settings.aoColumns[i].sType = dtype_map.get(dtype) || 'num';
-                        });
-
-                    dtype_preview_row.ready(() => {
-                        $(settings.nTHead).append(dtype_preview_row);
-                    });
-
-                    console.debug('Data preview initialization.', settings);
-
-                    let data_preview_row = dt.row.create()
-                        .removeAttr('aria-controls')
-                        .removeAttr('aria-label')
-                        .attr('class', 'column-data-preview');
-
-                    data_preview_row
-                        .children().each((i, e) => {
-                            if ($(e).is('th')) return;
-
-                            $(e)
-                            .attr('class', 'column-data-preview')
-                            .attr('role', 'figure')
-                            .attr('aria-label', `data preview for column ${i}`);
-
-                            let dtype = settings.aoColumns[i].sType;
-                            let data  =  dt.column(i).data().toArray();
-                            let data_preview = create_data_preview(data, dtype);
-
-                            $(e).append(data_preview);
-                        });
-
-                    data_preview_row.ready(() => {
-                        $(settings.nTHead).append(data_preview_row);
-                    });
-
-                    resolve(settings);
-                }
+              // map dtype back to known format
+              // TODO: run type detectors instead of assuming 'num'
+              settings.aoColumns[i].sType = dTypeMap.get(dtype) || 'num'
             })
 
-            let dt = $(table).DataTable(options).columns.adjust()
-                .responsive.recalc()
-                .columns.adjust();
-            let btns = new $.fn.dataTable.Buttons(dt, {
-                buttons: buttons
-            });
+          dTypePreviewRow.ready(() => {
+            $(settings.nTHead).append(dTypePreviewRow)
+          })
 
-            events.one('output_appended.OutputArea', () => {
-                setTimeout(dt.columns.adjust, 50);
-            });
+          console.debug('Data preview initialization.', settings)
 
-            $(dt.table().container()).prepend(btns.container());
-        });
-    };
+          let dataPreviewRow = dt.row.create()
+            .removeAttr('aria-controls')
+            .removeAttr('aria-label')
+            .attr('class', 'column-data-preview')
 
-    /**
+          dataPreviewRow
+            .children().each((i, e) => {
+              if ($(e).is('th')) return
+
+              $(e)
+                .attr('class', 'column-data-preview')
+                .attr('role', 'figure')
+                .attr('aria-label', `data preview for column ${i}`)
+
+              let dtype = settings.aoColumns[i].sType
+              let data = dt.column(i).data().toArray()
+              let dataPreview = createDataPreview(data, dtype)
+
+              $(e).append(dataPreview)
+            })
+
+          dataPreviewRow.ready(() => {
+            $(settings.nTHead).append(dataPreviewRow)
+          })
+
+          resolve(settings)
+        }
+      })
+
+      let dt = $(table).DataTable(options).columns.adjust()
+        .responsive.recalc()
+        .columns.adjust()
+      let btns = new $.fn.dataTable.Buttons(dt, {
+        buttons: buttons
+      })
+
+      events.one('output_appended.OutputArea', () => {
+        setTimeout(dt.columns.adjust, 50)
+      })
+
+      $(dt.table().container()).prepend(btns.container())
+    })
+  }
+
+  /**
      * Create HTML table from raw String and append it to an element
-     * 
-     * @param {String} html 
-     * @param {Element} element 
+     *
+     * @param {String} html
+     * @param {Element} element
      */
-    let append_table = function (html, element) {
-        return new Promise((resolve) => {
-            const table = $.parseHTML(html);
+  let appendTable = function (html, element) {
+    return new Promise((resolve) => {
+      const table = $.parseHTML(html)
 
-            $(table).ready(() => {
-                element.append(table);
-                resolve(table);
-            });
-        });
-    };
+      $(table).ready(() => {
+        element.append(table)
+        resolve(table)
+      })
+    })
+  }
 
-    /**
+  /**
      * Create DataTable from raw string and append it to an element
      */
-    return append_datatable = async function (html, options, buttons, element) {
-        const table = await append_table(html, element);
+  return appendDataTable = async function (html, options, buttons, element) {
+    const table = await appendTable(html, element)
 
-        return create_datatable(table, options, buttons);
-    };
-});
+    return createDataTable(table, options, buttons)
+  }
+})
