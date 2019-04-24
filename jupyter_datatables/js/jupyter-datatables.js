@@ -55,7 +55,7 @@ define('jupyter-datatables', function (require) {
         let y_range = d3.scaleLinear()
             .domain([0, d3.max(bins, d => d.length)])
             .nice()
-            .range([PLOT_HEIGHT, 0]); // reverse the domain
+            .range([PLOT_HEIGHT - PLOT_MARGIN.bottom, PLOT_MARGIN.top]);
 
         g.selectAll('.bar')
             .data(bins)
@@ -94,13 +94,13 @@ define('jupyter-datatables', function (require) {
 
         let x_range = d3.scaleBand()
             .domain(x)
-            .range([0, PLOT_WIDTH])
+            .range([PLOT_MARGIN.left, PLOT_WIDTH - PLOT_MARGIN.right])
             .padding(0.1);
 
         let y_range = d3.scaleLinear()
             .domain([0, d3.max(y)])
             .nice()
-            .range([PLOT_HEIGHT, 0]); // reverse the domain
+            .range([PLOT_HEIGHT - PLOT_MARGIN.bottom, PLOT_MARGIN.top]);
 
         g.selectAll('.bar')
             .data(data)
@@ -142,12 +142,12 @@ define('jupyter-datatables', function (require) {
         let x_scale = d3.scaleTime()
             .domain(d3.extent(data, (d) => d.x))
             .nice()
-            .range([0, PLOT_WIDTH]);
+            .range([PLOT_MARGIN.left, PLOT_WIDTH - PLOT_MARGIN.right]);
 
         let y_scale = d3.scaleLinear()
             .domain([0, d3.max(data, (d) => d.y)])
             .nice()
-            .range([PLOT_HEIGHT, 0]);
+            .range([PLOT_HEIGHT - PLOT_MARGIN.bottom, PLOT_MARGIN.top]);
         
         let area_path = d3.area()
             .x( (d) => x_scale(d.x) )
