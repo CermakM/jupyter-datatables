@@ -1,9 +1,15 @@
 define('jupyter-datatables', function (require) {
+    require("datatables.net");
+
     let events = require("base/js/events");
     let d3 = require("d3");
-    let DT = require("datatables.net");
 
-    
+    const PLOT_WIDTH  = 600,
+          PLOT_HEIGHT = 400;
+
+    const PLOT_MARGIN = { left: 5, right: 5, top: 10, bottom: 10 };
+
+
     let _hist_bin_fd = function(a) {
         return 2 * (d3.quantile(a, .75) - d3.quantile(a, .25)) * Math.pow(a.length, -1 / 3);
     };
@@ -15,31 +21,21 @@ define('jupyter-datatables', function (require) {
     let _hist_bin_auto = function(a) {
         const bin_width_fd = _hist_bin_fd(a),
               bin_width_sturges = _hist_bin_sturges(a);
-            
+
         return bin_width_fd ? Math.min(bin_width_fd, bin_width_sturges) : bin_width_sturges;
     }
 
-    let histogram = function (data, margin) {
+    let plot_histogram = function (data) {
         data = Array.prototype.map.call(data, Number).sort(d3.ascending);
 
-        margin = {
-            left: 5,
-            right: 5,
-            top: 10,
-            bottom: 10
-        };
-
-        const width  = 600,
-              height = 400;
-        
         const n_bins = Math.ceil(( data[data.length - 1] - data[0] ) / _hist_bin_auto(data));
-        
+
         let svg_container = document.createElement('div');
         let svg = d3.select(svg_container)
             .classed('svg-container', true)
             .append('svg')
             .attr('preserveAspectRatio', 'xMinYMin meet')
-            .attr('viewBox', `0 0 ${width} ${height}`)
+            .attr('viewBox', `0 0 ${PLOT_WIDTH} ${PLOT_HEIGHT}`)
             .classed('svg-content', true);
 
         let g = svg
@@ -49,7 +45,7 @@ define('jupyter-datatables', function (require) {
         let x_range = d3.scaleLinear()
             .domain(d3.extent(data))
             .nice()
-            .range([0, width]);
+            .range([0, PLOT_WIDTH]);
 
         let bins = d3.histogram()
             .domain(x_range.domain())
@@ -59,7 +55,7 @@ define('jupyter-datatables', function (require) {
         let y_range = d3.scaleLinear()
             .domain([0, d3.max(bins, d => d.length)])
             .nice()
-            .range([height, 0]); // reverse the domain
+            .range([PLOT_HEIGHT, 0]); // reverse the domain
 
         g.selectAll('.bar')
             .data(bins)
@@ -75,7 +71,7 @@ define('jupyter-datatables', function (require) {
         return svg_container;
     };
 
-    let bar = function (x, y) {
+    let plot_bar = function (x, y) {
         if (_.isUndefined(y)) {
             y = x;
             x = [...Array(y.length).keys()];
@@ -84,22 +80,12 @@ define('jupyter-datatables', function (require) {
         const data = d3.zip(x, y)
             .map( (v) => _.object(['x', 'y'], v) );
 
-        const margin = {
-            left: 5,
-            right: 5,
-            top: 10,
-            bottom: 10
-        };
-
-        const width  = 600,
-              height = 400;
-
         let svg_container = document.createElement('div');
         let svg = d3.select(svg_container)
             .classed('svg-container', true)
             .append('svg')
             .attr('preserveAspectRatio', 'xMinYMin meet')
-            .attr('viewBox', `0 0 ${width} ${height}`)
+            .attr('viewBox', `0 0 ${PLOT_WIDTH} ${PLOT_HEIGHT}`)
             .classed('svg-content', true);
 
         let g = svg
@@ -108,13 +94,13 @@ define('jupyter-datatables', function (require) {
 
         let x_range = d3.scaleBand()
             .domain(x)
-            .range([0, width])
+            .range([0, PLOT_WIDTH])
             .padding(0.1);
 
         let y_range = d3.scaleLinear()
             .domain([0, d3.max(y)])
             .nice()
-            .range([height, 0]); // reverse the domain
+            .range([PLOT_HEIGHT, 0]); // reverse the domain
 
         g.selectAll('.bar')
             .data(data)
@@ -129,6 +115,74 @@ define('jupyter-datatables', function (require) {
 
         return svg_container;
     };
+
+    let plot_timeseries = function(x, y) {
+        if (_.isUndefined(y)) {
+            y = x;
+            x = [...Array(y.length).keys()];
+        }
+
+        const data = d3.zip(x, y)
+            .map( (v) => _.object(['x', 'y'], v) );
+
+        const radius = 7;  // circle radius
+
+        let svg_container = document.createElement('div');
+        let svg = d3.select(svg_container)
+            .classed('svg-container', true)
+            .append('svg')
+            .attr('preserveAspectRatio', 'xMinYMin meet')
+            .attr('viewBox', `0 0 ${PLOT_WIDTH} ${PLOT_HEIGHT}`)
+            .classed('svg-content', true);
+
+        let g = svg
+            .append('g')
+            .classed('timeseries', true);
+
+        let x_scale = d3.scaleTime()
+            .domain(d3.extent(data, (d) => d.x))
+            .nice()
+            .range([0, PLOT_WIDTH]);
+
+        let y_scale = d3.scaleLinear()
+            .domain([0, d3.max(data, (d) => d.y)])
+            .nice()
+            .range([PLOT_HEIGHT, 0]);
+        
+        let area_path = d3.area()
+            .x( (d) => x_scale(d.x) )
+            .y0( PLOT_HEIGHT )
+            .y1( (d) => y_scale(d.y) )
+            (data);
+
+        let line_path = d3.line()
+            .x( (d) => x_scale(d.x) )
+            .y( (d) => y_scale(d.y) )
+            (data);
+
+        g.append('path')
+            .classed('area', true)
+            .attr('d', area_path)
+            .attr('fill', 'lightsteelblue');
+
+        g.append('path')
+            .classed('line', true)
+            .attr('d', line_path)
+            .attr('fill', 'none')
+            .attr('stroke', "steelblue")
+            .attr('stroke-width', 5);
+
+        g.selectAll('circle')
+            .data(data)
+            .enter()
+            .append('circle')
+            .attr('cx', (d) => x_scale(d.x))
+            .attr('cy', (d) => y_scale(d.y))
+            .attr('r', radius)
+            .attr('fill', 'steelblue');
+        
+        return svg_container;
+    }
 
     const dtype_map = new Map();
     ['bool'].forEach((dtype) => dtype_map.set(dtype, 'boolean'));  // bool
@@ -146,11 +200,11 @@ define('jupyter-datatables', function (require) {
         let row = $(this.row(0).node())
             .clone()
             .removeClass()
-        
+
         row
             .children()
             .empty();
-        
+
         return row;
     });
 
@@ -170,34 +224,41 @@ define('jupyter-datatables', function (require) {
         ];
 
         dtype_options.forEach((opt) => opt.appendTo(dtype_select));
-        
+
         return dtype_container;
     };
 
     let create_data_preview = function (data, dtype) {
         let data_preview = null;
-        
+
         const grouped = d3.nest()
             .key( (d) => d )
             .rollup( (d) => d.length)
             .entries(data);
-        
+
         switch(dtype) {
             case 'num':
-                data_preview = grouped.length <= 10 ? bar(grouped.map( (d) => d.value) ) : histogram(data);
+                data_preview = grouped.length <= 10 ? plot_bar(grouped.map( (d) => d.value) ) : plot_histogram(data);
                 break;
             case 'boolean':
                 // fall-through
             case 'string':
-                const x = grouped.map( (d) => d.key );
-                const y = grouped.map( (d) => d.value );
-                
-                data_preview = bar(x, y);
+                data_preview = plot_bar(
+                    grouped.map( (d) => d.key ),
+                    grouped.map( (d) => d.value )
+                );
                 break;
+            case 'date':
+                console.log(data);
+                data_preview = plot_timeseries(
+                    grouped.map( (d) => new Date(d.key) ),
+                    grouped.map( (d) => d.value )
+                );
+                break
             default:
-                data_preview = bar(data);
+                data_preview = plot_histogram(data);
         }
-                
+
         return data_preview;
     };
 
@@ -226,7 +287,7 @@ define('jupyter-datatables', function (require) {
                     let dt = settings.oInstance.api();
 
                     console.debug('dtype preview initialization.', settings);
-                    
+
                     let dtype_preview_row = dt.row.create()
                         .removeAttr('aria-label')
                         .attr('class', 'dtype-preview');
@@ -235,7 +296,7 @@ define('jupyter-datatables', function (require) {
                         .children().each((i, e) => {
                             if ($(e).is('th'))
                                 return;
-                        
+
                             let dtype = settings.aoColumns[i].sType;
                             let dtype_preview = create_dtype_preview(dtype);
 
@@ -248,13 +309,13 @@ define('jupyter-datatables', function (require) {
                             // TODO: run type detectors instead of assuming 'num'
                             settings.aoColumns[i].sType = dtype_map.get(dtype) || 'num';
                         });
-                    
+
                     dtype_preview_row.ready(() => {
                         $(settings.nTHead).append(dtype_preview_row);
                     });
-                    
+
                     console.debug('Data preview initialization.', settings);
-                    
+
                     let data_preview_row = dt.row.create()
                         .removeAttr('aria-controls')
                         .removeAttr('aria-label')
@@ -263,7 +324,7 @@ define('jupyter-datatables', function (require) {
                     data_preview_row
                         .children().each((i, e) => {
                             if ($(e).is('th')) return;
-                        
+
                             $(e)
                             .attr('class', 'column-data-preview')
                             .attr('role', 'figure')
@@ -272,25 +333,25 @@ define('jupyter-datatables', function (require) {
                             let dtype = settings.aoColumns[i].sType;
                             let data  =  dt.column(i).data().toArray();
                             let data_preview = create_data_preview(data, dtype);
-                        
+
                             $(e).append(data_preview);
                         });
-                    
+
                     data_preview_row.ready(() => {
                         $(settings.nTHead).append(data_preview_row);
                     });
-                    
+
                     resolve(settings);
                 }
             })
-            
+
             let dt = $(table).DataTable(options).columns.adjust()
                 .responsive.recalc()
                 .columns.adjust();
             let btns = new $.fn.dataTable.Buttons(dt, {
                 buttons: buttons
             });
-            
+
             events.one('output_appended.OutputArea', () => {
                 setTimeout(dt.columns.adjust, 50);
             });
