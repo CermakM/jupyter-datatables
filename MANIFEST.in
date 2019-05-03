@@ -1,3 +1,4 @@
+# static files
 recursive-include jupyter_datatables/css *.css
 recursive-include jupyter_datatables/js *.js
 
@@ -5,6 +6,11 @@ graft assets
 
 include LICENSE
 include README.md
+
+# setuptools
+include Pipfile
+include requirements.in
+include requirements.txt
 
 # Documentation
 graft docs
