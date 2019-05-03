@@ -36,7 +36,7 @@ jupyter nbextension enable jupyter-require/extension
 import numpy as np
 import pandas as pd
 
-from jupyter-datatables import init_datatables_mode
+from jupyter_datatables import init_datatables_mode
 
 init_datatables_mode()
 ```
