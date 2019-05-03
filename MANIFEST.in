@@ -1,3 +1,6 @@
+recursive-include jupyter_datatables/css *.css
+recursive-include jupyter_datatables/js *.js
+
 graft assets
 
 include LICENSE
