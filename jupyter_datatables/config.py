@@ -1,4 +1,4 @@
-# jupyter-tools
+# jupyter-datatables
 # Copyright 2019 Marek Cermak <macermak@redhat.com>
 
 """Default configuration for Jupyter datatables tool."""
