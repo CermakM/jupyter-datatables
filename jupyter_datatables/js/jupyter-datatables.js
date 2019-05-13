@@ -233,6 +233,8 @@ define('jupyter-datatables', function (require) {
   let createDataPreview = function (data, dtype) {
     let dataPreview = null
 
+    data = data.sort()
+
     const grouped = d3.nest()
       .key((d) => d)
       .rollup((d) => d.length)
