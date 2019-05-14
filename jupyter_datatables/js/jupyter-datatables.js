@@ -341,6 +341,8 @@ define('jupyter-datatables', function (require) {
             $(settings.nTHead).append(dataPreviewRow)
           })
 
+          // if there is a search bar, disable the keyboard manager on focus
+
           resolve(settings)
         }
       })
@@ -378,10 +380,45 @@ define('jupyter-datatables', function (require) {
   }
 
   /**
+   * Initialize events
+   */
+  let initDataTableEvents = function () {
+    // Focus search field event
+    $(document).on('focus', '.dataTables_filter input', function (e) {
+      setTimeout(() => {
+        let cell = Jupyter.notebook.get_selected_cell()
+        let oArea = cell.output_area
+
+        if (e.type === 'focusin') {
+          oArea.keyboard_manager.disable()
+        } else { oArea.keyboard_manager.enable() }
+      }, 50) // set timeout to let Jupyter select the cell
+    })
+
+    // Keyup search field event
+    $(document).on('keyup', '.dataTables_filter input', function (e) {
+      if ($(this).is(':focus') && e.key === 'Escape') {
+        let cell = Jupyter.notebook.get_selected_cell()
+        let oArea = cell.output_area
+
+        $(this).blur()  // focus out of the search element
+
+        oArea.keyboard_manager.enable()
+
+        return events.trigger('select.Cell', { 'cell': cell })
+      }
+
+      return true
+    })
+  }
+
+  /**
      * Create DataTable from raw string and append it to an element
      */
   return appendDataTable = async function (html, options, buttons, element) {
     const table = await appendTable(html, element)
+
+    initDataTableEvents()
 
     return createDataTable(table, options, buttons)
   }
