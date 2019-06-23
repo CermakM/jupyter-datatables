@@ -103,7 +103,6 @@ def init_datatables_mode(options: dict = None, classes: list = None):
             "https://cdn.datatables.net/" "responsive/2.2.2/js/dataTables.responsive.min"
         )  # Responsive
 
-
     if extensions.get("scroller", False):
         libs["datatables.scroller"] = (
             "https://cdn.datatables.net/" "scroller/2.0.0/js/dataTables.scroller.min"
@@ -181,7 +180,14 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
             n, _calculate_sample_size(n)
         ])
 
-    df = self[:sample_size]  # TODO: smarter way to choose the sample
+    idx = []
+    # get 5% of extremes from each column to account for outliers in the sample
+    for col in self.columns:
+        idx.extend(self.nlargest(math.ceil(sample_size * 0.05), col).index)
+        idx.extend(self.nsmallest(math.ceil(sample_size * 0.05), col).index)
+
+    sample = pd.Index({*idx, *self.index[:sample_size]})
+    df = self.iloc[sample]
 
     sha = hashlib.sha256(
         df.to_json().encode()
@@ -225,7 +231,6 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
         element.append($('<p>').text(
             `Sample size: ${{sample_size}} out of ${{total}}`));
     """
-
 
 
 def _get_columns_defs(df: pd.DataFrame, options: dict = None):
