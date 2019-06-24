@@ -53,11 +53,22 @@ _HERE = Path(__file__).parent
 
 
 def init_datatables_mode(options: dict = None, classes: list = None):
-    """Initialize DataTable mode for pandas DataFrame represenation."""
+    """Initialize DataTable mode for pandas DataFrame representation."""
     # extensions to be loaded
     extensions = config.defaults.extensions
 
     require("d3", "https://cdnjs.cloudflare.com/ajax/libs/d3/5.9.2/d3.min")
+    require.config(**{
+        "paths": {
+            "moment": "https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.8.0/moment",
+            "chartjs": "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart"
+        },
+        "shim": {
+            "chartjs": {
+                "deps": ["moment"]  # enforce moment to be loaded before chartjs
+            }
+        },
+    })
 
     # configure path to the datatables library using requireJS
     libs = OrderedDict(
@@ -113,7 +124,7 @@ def init_datatables_mode(options: dict = None, classes: list = None):
             "https://cdn.datatables.net/" "select/1.3.0/js/dataTables.select.min"
         )  # Select
 
-    require.config(libs=libs, shim=shim)
+    require.config(paths=libs, shim=shim)
 
     # link stylesheets
     link_css(
@@ -198,7 +209,7 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
 
     execute_with_requirements(
         script,
-        required=["base/js/events", "datatables.net", "d3", "jupyter-datatables"],
+        required=["base/js/events", "datatables.net", "d3", "chartjs", "jupyter-datatables"],
         html=html,
         options=json.dumps(options),
         buttons=buttons,
