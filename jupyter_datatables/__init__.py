@@ -193,9 +193,11 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
 
     idx = []
     # get 5% of extremes from each column to account for outliers in the sample
+    # (if applicable)
     for col in self.columns:
-        idx.extend(self.nlargest(math.ceil(sample_size * 0.05), col).index)
-        idx.extend(self.nsmallest(math.ceil(sample_size * 0.05), col).index)
+        if self[col].dtype != "O":
+            idx.extend(self.nlargest(math.ceil(sample_size * 0.05), col).index)
+            idx.extend(self.nsmallest(math.ceil(sample_size * 0.05), col).index)
 
     sample = pd.Index({*idx, *self.index[:sample_size]})
     df = self.iloc[sample]
