@@ -1,4 +1,4 @@
-define('jupyter-datatables', function (require) {
+define('jupyter-datatables', ["datatables.net", "graph-objects"], function (DT, go) {
   require('datatables.net')
 
   let _ = require('underscore')
@@ -27,164 +27,119 @@ define('jupyter-datatables', function (require) {
     return binWidthfd ? Math.min(binWidthfd, binWidthSturges) : binWidthSturges
   }
 
-  let plotHistogram = function (data) {
-    data = Array.prototype.map.call(data, Number).sort(d3.ascending)
+//  let plotHistogram = function (data) {
+//    data = Array.prototype.map.call(data, Number).sort(d3.ascending)
+//
+//    const nBins = Math.ceil((data[data.length - 1] - data[0]) / histBinAuto(data))
+//
+//    let svgContainer = document.createElement('div')
+//    let svg = d3.select(svgContainer)
+//      .classed('svg-container', true)
+//      .append('svg')
+//      .attr('preserveAspectRatio', 'xMinYMin meet')
+//      .attr('viewBox', `0 0 ${PLOT_WIDTH} ${PLOT_HEIGHT}`)
+//      .classed('svg-content', true)
+//
+//    let g = svg
+//      .append('g')
+//      .classed('bars', true)
+//
+//    let xScale = d3.scaleLinear()
+//      .domain(d3.extent(data))
+//      .nice()
+//      .range([0, PLOT_WIDTH])
+//
+//    let bins = d3.histogram()
+//      .domain(xScale.domain())
+//      .thresholds(xScale.ticks(nBins))
+//      (data)
+//
+//    let yScale = d3.scaleLinear()
+//      .domain([0, d3.max(bins, d => d.length)])
+//      .nice()
+//      .range([PLOT_HEIGHT - PLOT_MARGIN.bottom, PLOT_MARGIN.top])
+//
+//    g.selectAll('.bar')
+//      .data(bins)
+//      .enter()
+//      .append('rect')
+//      .attr('x', (d) => xScale(d.x0) + 1.5)
+//      .attr('y', (d) => yScale(d.length))
+//      .attr('width', (d) => Math.max(0, xScale(d.x1) - xScale(d.x0)))
+//      .attr('height', (d) => yScale(0) - yScale(d.length))
+//      .attr('fill', 'steelblue')
+//      .classed('bar', true)
+//
+//    return svgContainer
+//  }
 
-    const nBins = Math.ceil((data[data.length - 1] - data[0]) / histBinAuto(data))
-
-    let svgContainer = document.createElement('div')
-    let svg = d3.select(svgContainer)
-      .classed('svg-container', true)
-      .append('svg')
-      .attr('preserveAspectRatio', 'xMinYMin meet')
-      .attr('viewBox', `0 0 ${PLOT_WIDTH} ${PLOT_HEIGHT}`)
-      .classed('svg-content', true)
-
-    let g = svg
-      .append('g')
-      .classed('bars', true)
-
-    let xScale = d3.scaleLinear()
-      .domain(d3.extent(data))
-      .nice()
-      .range([0, PLOT_WIDTH])
-
-    let bins = d3.histogram()
-      .domain(xScale.domain())
-      .thresholds(xScale.ticks(nBins))
-      (data)
-
-    let yScale = d3.scaleLinear()
-      .domain([0, d3.max(bins, d => d.length)])
-      .nice()
-      .range([PLOT_HEIGHT - PLOT_MARGIN.bottom, PLOT_MARGIN.top])
-
-    g.selectAll('.bar')
-      .data(bins)
-      .enter()
-      .append('rect')
-      .attr('x', (d) => xScale(d.x0) + 1.5)
-      .attr('y', (d) => yScale(d.length))
-      .attr('width', (d) => Math.max(0, xScale(d.x1) - xScale(d.x0)))
-      .attr('height', (d) => yScale(0) - yScale(d.length))
-      .attr('fill', 'steelblue')
-      .classed('bar', true)
-
-    return svgContainer
-  }
-
-  let plotBar = function (x, y) {
-    if (_.isUndefined(y)) {
-      y = x
-      x = [...Array(y.length).keys()]
-    }
-
-    const data = d3.zip(x, y)
-      .map((v) => _.object(['x', 'y'], v))
-
-    let svgContainer = document.createElement('div')
-    let svg = d3.select(svgContainer)
-      .classed('svg-container', true)
-      .append('svg')
-      .attr('preserveAspectRatio', 'xMinYMin meet')
-      .attr('viewBox', `0 0 ${PLOT_WIDTH} ${PLOT_HEIGHT}`)
-      .classed('svg-content', true)
-
-    let g = svg
-      .append('g')
-      .classed('bars', true)
-
-    let xScale = d3.scaleBand()
-      .domain(x)
-      .range([PLOT_MARGIN.left, PLOT_WIDTH - PLOT_MARGIN.right])
-      .padding(0.1)
-
-    let yScale = d3.scaleLinear()
-      .domain([0, d3.max(y)])
-      .nice()
-      .range([PLOT_HEIGHT - PLOT_MARGIN.bottom, PLOT_MARGIN.top])
-
-    g.selectAll('.bar')
-      .data(data)
-      .enter()
-      .append('rect')
-      .attr('x', (d) => xScale(d.x))
-      .attr('y', (d) => yScale(d.y))
-      .attr('width', xScale.bandwidth())
-      .attr('height', (d) => yScale(0) - yScale(d.y))
-      .attr('fill', 'steelblue')
-      .classed('bar', true)
-
-    return svgContainer
-  }
-
-  let plotTimeseries = function (x, y) {
-    if (_.isUndefined(y)) {
-      y = x
-      x = [...Array(y.length).keys()]
-    }
-
-    const data = d3.zip(x, y)
-      .map((v) => _.object(['x', 'y'], v))
-
-    const radius = 7 // circle radius
-
-    let svgContainer = document.createElement('div')
-    let svg = d3.select(svgContainer)
-      .classed('svg-container', true)
-      .append('svg')
-      .attr('preserveAspectRatio', 'xMinYMin meet')
-      .attr('viewBox', `0 0 ${PLOT_WIDTH} ${PLOT_HEIGHT}`)
-      .classed('svg-content', true)
-
-    let g = svg
-      .append('g')
-      .classed('timeseries', true)
-
-    let xScale = d3.scaleTime()
-      .domain(d3.extent(data, (d) => d.x))
-      .nice()
-      .range([PLOT_MARGIN.left, PLOT_WIDTH - PLOT_MARGIN.right])
-
-    let yScale = d3.scaleLinear()
-      .domain([0, d3.max(data, (d) => d.y)])
-      .nice()
-      .range([PLOT_HEIGHT - PLOT_MARGIN.bottom, PLOT_MARGIN.top])
-
-    let areaPath = d3.area()
-      .x((d) => xScale(d.x))
-      .y0(PLOT_HEIGHT)
-      .y1((d) => yScale(d.y))
-      (data)
-
-    let linePath = d3.line()
-      .x((d) => xScale(d.x))
-      .y((d) => yScale(d.y))
-      (data)
-
-    g.append('path')
-      .classed('area', true)
-      .attr('d', areaPath)
-      .attr('fill', 'lightsteelblue')
-
-    g.append('path')
-      .classed('line', true)
-      .attr('d', linePath)
-      .attr('fill', 'none')
-      .attr('stroke', 'steelblue')
-      .attr('stroke-width', 5)
-
-    g.selectAll('circle')
-      .data(data)
-      .enter()
-      .append('circle')
-      .attr('cx', (d) => xScale(d.x))
-      .attr('cy', (d) => yScale(d.y))
-      .attr('r', radius)
-      .attr('fill', 'steelblue')
-
-    return svgContainer
-  }
+//  let plotTimeseries = function (x, y) {
+//    if (_.isUndefined(y)) {
+//      y = x
+//      x = [...Array(y.length).keys()]
+//    }
+//
+//    const data = d3.zip(x, y)
+//      .map((v) => _.object(['x', 'y'], v))
+//
+//    const radius = 7 // circle radius
+//
+//    let svgContainer = document.createElement('div')
+//    let svg = d3.select(svgContainer)
+//      .classed('svg-container', true)
+//      .append('svg')
+//      .attr('preserveAspectRatio', 'xMinYMin meet')
+//      .attr('viewBox', `0 0 ${PLOT_WIDTH} ${PLOT_HEIGHT}`)
+//      .classed('svg-content', true)
+//
+//    let g = svg
+//      .append('g')
+//      .classed('timeseries', true)
+//
+//    let xScale = d3.scaleTime()
+//      .domain(d3.extent(data, (d) => d.x))
+//      .nice()
+//      .range([PLOT_MARGIN.left, PLOT_WIDTH - PLOT_MARGIN.right])
+//
+//    let yScale = d3.scaleLinear()
+//      .domain([0, d3.max(data, (d) => d.y)])
+//      .nice()
+//      .range([PLOT_HEIGHT - PLOT_MARGIN.bottom, PLOT_MARGIN.top])
+//
+//    let areaPath = d3.area()
+//      .x((d) => xScale(d.x))
+//      .y0(PLOT_HEIGHT)
+//      .y1((d) => yScale(d.y))
+//      (data)
+//
+//    let linePath = d3.line()
+//      .x((d) => xScale(d.x))
+//      .y((d) => yScale(d.y))
+//      (data)
+//
+//    g.append('path')
+//      .classed('area', true)
+//      .attr('d', areaPath)
+//      .attr('fill', 'lightsteelblue')
+//
+//    g.append('path')
+//      .classed('line', true)
+//      .attr('d', linePath)
+//      .attr('fill', 'none')
+//      .attr('stroke', 'steelblue')
+//      .attr('stroke-width', 5)
+//
+//    g.selectAll('circle')
+//      .data(data)
+//      .enter()
+//      .append('circle')
+//      .attr('cx', (d) => xScale(d.x))
+//      .attr('cy', (d) => yScale(d.y))
+//      .attr('r', radius)
+//      .attr('fill', 'steelblue')
+//
+//    return svgContainer
+//  }
 
   const dTypeMap = new Map();
   ['bool'].forEach((dtype) => dTypeMap.set(dtype, 'boolean')); // bool
@@ -235,28 +190,29 @@ define('jupyter-datatables', function (require) {
 
     data = data.sort()
 
-    const grouped = d3.nest()
+    const grp = d3.nest()
       .key((d) => d)
       .rollup((d) => d.length)
       .entries(data)
 
     switch (dtype) {
       case 'num':
-        dataPreview = grouped.length <= 10 ? plotBar(grouped.map((d) => d.value)) : plotHistogram(data)
+        dataPreview = grp.length <= 10 ? go.Bar(grp.map(d => d.value), grp.map(d => d.key))
+                                       : plotHistogram(data)
         break
       case 'boolean':
         // fall-through
       case 'string':
-        dataPreview = plotBar(
-          grouped.map((d) => d.key),
-          grouped.map((d) => d.value)
+        dataPreview = go.Bar(
+          grp.map((d) => d.value),
+          grp.map((d) => d.key)
         )
         break
       case 'date':
         console.log(data)
         dataPreview = plotTimeseries(
-          grouped.map((d) => new Date(d.key)),
-          grouped.map((d) => d.value)
+          grp.map((d) => new Date(d.key)),
+          grp.map((d) => d.value)
         )
         break
       default:
