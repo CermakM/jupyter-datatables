@@ -141,18 +141,6 @@ define('jupyter-datatables', ["datatables.net", "graph-objects"], function (DT, 
 //    return svgContainer
 //  }
 
-  const dTypeMap = new Map();
-  ['bool'].forEach((dtype) => dTypeMap.set(dtype, 'boolean')); // bool
-  ['object', 'string'].forEach(
-    (dtype) => dTypeMap.set(dtype, 'string')
-  ); // string
-  ['int8, int16, int32, int64', 'float8, float16, float32, float64'].forEach(
-    (dtype) => dTypeMap.set(dtype, 'num')
-  ); // number
-  ['datetime8[ns]', 'datetime16[ns]', 'datetime32[ns]', 'datetime64[ns]'].forEach(
-    (dtype) => dTypeMap.set(dtype, 'date')
-  ) // date
-
   $.fn.dataTable.Api.register('row.create()', function () {
     let row = $(this.row(0).node())
       .clone()
@@ -163,6 +151,42 @@ define('jupyter-datatables', ["datatables.net", "graph-objects"], function (DT, 
       .empty()
 
     return row
+  })
+
+
+  let mapDType = (dtypes, target) => _.object(_.zip(dtypes, new Array(dtypes.length).fill(target)))
+
+  $.fn.dataTable.defaults.graphObjects = go 
+  $.fn.dataTable.defaults.dTypeMap = {
+    ...mapDType(['int8', 'int16', 'int32', 'int64', 'float8', 'float16', 'float32', 'float64'], "num"),
+    ...mapDType(['datetime8[ns]', 'datetime16[ns]', 'datetime32[ns]', 'datetime64[ns]'], "date"),
+    ...mapDType(["object", "string"], "string"),
+    ...mapDType(["bool"], "boolean"),
+    ...mapDType(["default"], "num")
+  }
+
+  $.fn.dataTable.defaults.dTypePlotMap = {
+    boolean: ['CategoricalBar', 'Histogram'],
+    date: [],
+    num: ['Bar', 'Histogram'],
+    string: ['CategoricalBar', 'Histogram'],
+
+    undefined: ['Bar']
+  }
+
+  /**
+     * Boolean type detector
+     */
+  $.fn.dataTable.ext.type.detect.unshift(function (data) {
+    const dtype = 'boolean'
+
+    if (_.isBoolean(data)) {
+      return dtype
+    } else if (_.isString(data)) {
+      return (/true|false/i).test(data.toLowerCase()) ? dtype : null
+    }
+
+    return null
   })
 
   let createDTypePreview = function (dtype) {
@@ -186,56 +210,30 @@ define('jupyter-datatables', ["datatables.net", "graph-objects"], function (DT, 
   }
 
   let createDataPreview = function (data, dtype) {
-    let dataPreview = null
+    console.debug("Creating data preview.")
 
     data = data.sort()
 
-    const grp = d3.nest()
-      .key((d) => d)
-      .rollup((d) => d.length)
-      .entries(data)
+    const defaults = $.fn.dataTable.defaults
 
-    switch (dtype) {
-      case 'num':
-        dataPreview = grp.length <= 10 ? go.Bar(grp.map(d => d.value), grp.map(d => d.key))
-                                       : plotHistogram(data)
+    if (_.isUndefined(dtype))
+      console.warn('Data type was not provided')
+
+    else if (!_.has(defaults.dTypePlotMap, dtype))
+      throw new Error(`Unknown dtype '${dtype}'`)
+
+    let kind = undefined
+    for (let k of defaults.dTypePlotMap[dtype]) {
+      if (_.has(defaults.graphObjects, k)) {
+        kind = k
         break
-      case 'boolean':
-        // fall-through
-      case 'string':
-        dataPreview = go.Bar(
-          grp.map((d) => d.value),
-          grp.map((d) => d.key)
-        )
-        break
-      case 'date':
-        console.log(data)
-        dataPreview = plotTimeseries(
-          grp.map((d) => new Date(d.key)),
-          grp.map((d) => d.value)
-        )
-        break
-      default:
-        dataPreview = plotHistogram(data)
+      }
     }
 
-    return dataPreview
+    const plot = defaults.graphObjects[kind]
+
+    return plot(data)
   }
-
-  /**
-     * Boolean type detector
-     */
-  $.fn.dataTable.ext.type.detect.unshift(function (data) {
-    const dtype = 'boolean'
-
-    if (_.isBoolean(data)) {
-      return dtype
-    } else if (_.isString(data)) {
-      return (/true|false/i).test(data.toLowerCase()) ? dtype : null
-    }
-
-    return null
-  })
 
   let createDataTable = function (table, options, buttons) {
     return new Promise((resolve) => {
@@ -263,7 +261,7 @@ define('jupyter-datatables', ["datatables.net", "graph-objects"], function (DT, 
 
               // map dtype back to known format
               // TODO: run type detectors instead of assuming 'num'
-              settings.aoColumns[i].sType = dTypeMap.get(dtype) || 'num'
+              settings.aoColumns[i].sType = $.fn.dataTable.defaults.dTypeMap[dtype]
             })
 
           dTypePreviewRow.ready(() => {
