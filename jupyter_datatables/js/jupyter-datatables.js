@@ -105,8 +105,8 @@ define('jupyter-datatables', ["datatables.net", "graph-objects"], function (DT, 
 
   $.fn.dataTable.defaults.dTypePlotMap = {
     boolean:  ['CategoricalBar', 'Histogram'],
-    date:     [],
-    num:      ['Categoricalbar', 'Bar', 'Histogram'],
+    date:     ['CategoricalBar', 'Histogram'],
+    num:      ['CategoricalBar', 'Bar', 'Histogram'],
     string:   ['CategoricalBar', 'Histogram'],
 
     undefined: ['Bar']
