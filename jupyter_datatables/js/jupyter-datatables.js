@@ -156,7 +156,7 @@ define('jupyter-datatables', ["datatables.net", "graph-objects"], function (DT, 
 
   let mapDType = (dtypes, target) => _.object(_.zip(dtypes, new Array(dtypes.length).fill(target)))
 
-  $.fn.dataTable.defaults.graphObjects = go 
+  $.fn.dataTable.defaults.graphObjects = Object(go)
   $.fn.dataTable.defaults.dTypeMap = {
     ...mapDType(['int8', 'int16', 'int32', 'int64', 'float8', 'float16', 'float32', 'float64'], "num"),
     ...mapDType(['datetime8[ns]', 'datetime16[ns]', 'datetime32[ns]', 'datetime64[ns]'], "date"),
@@ -166,10 +166,10 @@ define('jupyter-datatables', ["datatables.net", "graph-objects"], function (DT, 
   }
 
   $.fn.dataTable.defaults.dTypePlotMap = {
-    boolean: ['CategoricalBar', 'Histogram'],
-    date: [],
-    num: ['Bar', 'Histogram'],
-    string: ['CategoricalBar', 'Histogram'],
+    boolean:  ['CategoricalBar', 'Histogram'],
+    date:     [],
+    num:      ['Categoricalbar', 'Bar', 'Histogram'],
+    string:   ['CategoricalBar', 'Histogram'],
 
     undefined: ['Bar']
   }
@@ -228,7 +228,13 @@ define('jupyter-datatables', ["datatables.net", "graph-objects"], function (DT, 
         kind = k
         break
       }
+      console.warn("Unknown plot kind: ", k)
     }
+
+    if ( _.isUndefined(kind) )
+      throw new Error(
+        "Unable to find graph object for dtype: ", dtype, " in: ", defaults.graphObjects
+      )
 
     const plot = defaults.graphObjects[kind]
 

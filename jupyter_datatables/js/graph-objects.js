@@ -52,7 +52,23 @@ define("graph-objects", ["chartjs", "d3"], function (chartjs, d3) {
         return canvas
     }
 
+
+    let CategoricalBar = function(data) {
+
+        const grouped = d3.nest()
+            .key( d => d)
+            .rollup( d => d.length)
+            .entries(data)
+        
+        const values = grouped.map( d => d.value) 
+        const labels = grouped.map( d => d.key) 
+        
+        return Bar(values, labels)
+    }
+
+
     return {
-        Bar: Bar
+        Bar: Bar,
+        CategoricalBar: CategoricalBar
     }
 })
