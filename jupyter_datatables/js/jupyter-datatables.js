@@ -11,68 +11,6 @@ define('jupyter-datatables', ["datatables.net", "graph-objects"], function (DT, 
 
   const PLOT_MARGIN = { left: 5, right: 5, top: 10, bottom: 10 }
 
-  let histBinFreedman = function (a) {
-    return 2 * (d3.quantile(a, 0.75) - d3.quantile(a, 0.25)) * Math.pow(a.length, -1 / 3)
-  }
-
-  let histBinSturges = function (a) {
-    return (a[a.length - 1] - a[0]) / (Math.log2(a.length) + 1)
-  }
-
-  let histBinAuto = function (a) {
-    const binWidthfd = histBinFreedman(a)
-
-    const binWidthSturges = histBinSturges(a)
-
-    return binWidthfd ? Math.min(binWidthfd, binWidthSturges) : binWidthSturges
-  }
-
-//  let plotHistogram = function (data) {
-//    data = Array.prototype.map.call(data, Number).sort(d3.ascending)
-//
-//    const nBins = Math.ceil((data[data.length - 1] - data[0]) / histBinAuto(data))
-//
-//    let svgContainer = document.createElement('div')
-//    let svg = d3.select(svgContainer)
-//      .classed('svg-container', true)
-//      .append('svg')
-//      .attr('preserveAspectRatio', 'xMinYMin meet')
-//      .attr('viewBox', `0 0 ${PLOT_WIDTH} ${PLOT_HEIGHT}`)
-//      .classed('svg-content', true)
-//
-//    let g = svg
-//      .append('g')
-//      .classed('bars', true)
-//
-//    let xScale = d3.scaleLinear()
-//      .domain(d3.extent(data))
-//      .nice()
-//      .range([0, PLOT_WIDTH])
-//
-//    let bins = d3.histogram()
-//      .domain(xScale.domain())
-//      .thresholds(xScale.ticks(nBins))
-//      (data)
-//
-//    let yScale = d3.scaleLinear()
-//      .domain([0, d3.max(bins, d => d.length)])
-//      .nice()
-//      .range([PLOT_HEIGHT - PLOT_MARGIN.bottom, PLOT_MARGIN.top])
-//
-//    g.selectAll('.bar')
-//      .data(bins)
-//      .enter()
-//      .append('rect')
-//      .attr('x', (d) => xScale(d.x0) + 1.5)
-//      .attr('y', (d) => yScale(d.length))
-//      .attr('width', (d) => Math.max(0, xScale(d.x1) - xScale(d.x0)))
-//      .attr('height', (d) => yScale(0) - yScale(d.length))
-//      .attr('fill', 'steelblue')
-//      .classed('bar', true)
-//
-//    return svgContainer
-//  }
-
 //  let plotTimeseries = function (x, y) {
 //    if (_.isUndefined(y)) {
 //      y = x
