@@ -171,7 +171,7 @@ define('jupyter-datatables', ["datatables.net", "graph-objects"], function (DT, 
 
     if ( _.isUndefined(kind) )
       throw new Error(
-        "Unable to find graph object for dtype: ", dtype, " in: ", defaults.graphObjects
+        `Unable to find graph object for dtype '${dtype}' in: ${defaults.graphObjects}`
       )
 
     const plot = defaults.graphObjects[kind]
