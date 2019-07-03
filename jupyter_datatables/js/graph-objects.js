@@ -67,8 +67,53 @@ define("graph-objects", ["chartjs", "d3"], function (chartjs, d3) {
     }
 
 
+    let histBinFreedman = function (a) {
+        return 2 * (d3.quantile(a, 0.75) - d3.quantile(a, 0.25)) * Math.pow(a.length, -1 / 3)
+    }
+
+    let histBinSturges = function (a) {
+        return (a[a.length - 1] - a[0]) / (Math.log2(a.length) + 1)
+    }
+
+    let histBinAuto = function (a) {
+        const binWidthFreedman = histBinFreedman(a)
+        const binWidthSturges = histBinSturges(a)
+
+        return binWidthFreedman ? Math.min(binWidthFreedman, binWidthSturges) : binWidthSturges
+    }
+
+
+    let Histogram = function (data) {
+        // map to the Number data type and sort
+        data = Array.prototype.map.call(data, Number).sort(d3.ascending)
+
+        console.debug("Histogram data: ", data)
+
+        // automatically determine optimal number of bins
+        const nBins = Math.ceil((data[data.length - 1] - data[0]) / histBinAuto(data))
+
+        console.debug("Estimated number of bins: ", nBins)
+
+        let xScale = d3.scaleLinear()
+            .domain(d3.extent(data))
+            .nice()
+
+        let bins = d3.histogram()
+            .domain(xScale.domain())
+            .thresholds(xScale.ticks(nBins))
+            (data)
+
+        const histogram_data = bins.map((d) => d.length)
+        const histogram_labels = bins.map((d) => d.x0)
+
+        return Bar(histogram_data, histogram_labels)
+    }
+
+
     return {
         Bar: Bar,
-        CategoricalBar: CategoricalBar
+        CategoricalBar: CategoricalBar,
+        Histogram: Histogram
     }
+
 })
