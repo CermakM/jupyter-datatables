@@ -1,18 +1,36 @@
-define("graph-objects", ["chartjs", "d3"], function (chartjs, d3) {
+define("graph-objects", ["moment", "chartjs", "d3"], function (moment, chartjs, d3) {
 
     Chart.defaults.scale.gridLines.display = false
 
+    const layout = Chart.defaults.global.layout
 
-    let Bar = function (data, labels) {
-        if (_.isUndefined(labels)) {
-            labels = d3.range(0, data.length)
+    layout.width   = "150px"
+    layout.margin  = "auto"
+    layout.padding = 5
+
+
+    let Bar = function (data, index, dtype) {
+
+        if (_.isUndefined(index)) {
+            index = {
+                data : d3.range(0, data.length),
+                dtype: 'num',
+                level: 0
+            }
+        } else if ( index.length > 1 ) {
+            console.warn("Multi-index is not supported yet. Picking the 0th level.")
+        }
+
+        let labels = index[0].data
+        if ( index.dtype === "date" ) {
+            labels = labels.map( d => $.fn.dataTable.defaults.formatDate(d) )
         }
 
         console.debug("Bar plot data: ", data, "labels: ", labels)
 
         let canvas = $("<canvas>")
-            .attr("width", "135px")
-            .css("margin", "auto")
+            .attr("width", layout.width)
+            .css("margin", layout.margin)
 
         canvas.ready(() => {
 
@@ -53,7 +71,7 @@ define("graph-objects", ["chartjs", "d3"], function (chartjs, d3) {
     }
 
 
-    let CategoricalBar = function(data) {
+    let CategoricalBar = function(data, index, dtype) {
 
         const grouped = d3.nest()
             .key( d => d)
@@ -62,8 +80,10 @@ define("graph-objects", ["chartjs", "d3"], function (chartjs, d3) {
         
         const values = grouped.map( d => d.value) 
         const labels = grouped.map( d => d.key) 
+
+        index = [{level: 0, data: labels, dtype: dtype}]
         
-        return Bar(values, labels)
+        return Bar(values, index, 'num')
     }
 
 
@@ -83,7 +103,7 @@ define("graph-objects", ["chartjs", "d3"], function (chartjs, d3) {
     }
 
 
-    let Histogram = function (data) {
+    let Histogram = function (data, index, dtype) {
         // map to the Number data type and sort
         data = Array.prototype.map.call(data, Number).sort(d3.ascending)
 
@@ -106,7 +126,9 @@ define("graph-objects", ["chartjs", "d3"], function (chartjs, d3) {
         const histogram_data = bins.map((d) => d.length)
         const histogram_labels = bins.map((d) => d.x0)
 
-        return Bar(histogram_data, histogram_labels)
+        index = [{level: 0, data: histogram_labels, dtype: dtype}]
+
+        return Bar(histogram_data, index, 'num')
     }
 
 

@@ -8,7 +8,7 @@ from collections import namedtuple
 __all__ = ['defaults']
 
 
-_DEFAULT_CONFIG = {
+Configuration = {
     'classes': ['table', 'cell-border', 'nowrap'],
     'options': {
         'columnDefs': [
@@ -27,7 +27,9 @@ _DEFAULT_CONFIG = {
             'print', 'csv', 'pdf'
         ],
 
+        'order': [],  # disable initial ordering
         'ordering': True,
+
         'paging': True,
 
         'responsive': True,
@@ -43,12 +45,21 @@ _DEFAULT_CONFIG = {
         'scroller': True,
         'select': True
     },
-    'limit': 1000,  # beyond this limit a sample is taken
+    # Take a sample after exceeding given limit
+    #
+    # :type int: limit number of rows of the table
+    'limit': 1000,
     'sample_size': None,
+    # Sort dataTable by index or values
+    #
+    # :type bool: enable or disable sorting by index (default: False)
+    # :type str: sort by single column
+    # :type List[str]: sort by multiple column(s)
+    'sort': False,
     'warnings': True,
 }
 
 DefaultDataTablesConfig = namedtuple('DefaultConfig', _DEFAULT_CONFIG.keys())
 
-defaults = DefaultDataTablesConfig(**_DEFAULT_CONFIG)
+config = DefaultDataTablesConfig(**_DEFAULT_CONFIG)
 """Default configuration for Jupyter datatables tools."""
