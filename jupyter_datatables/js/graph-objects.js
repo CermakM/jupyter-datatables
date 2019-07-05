@@ -21,7 +21,10 @@ define("graph-objects", ["moment", "chartjs", "d3"], function (moment, chartjs, 
             console.warn("Multi-index is not supported yet. Picking the 0th level.")
         }
 
-        let labels = index[0].data
+        index = index[0]  // TODO: Handle multi-index
+
+        let labels = index.data
+
         if ( index.dtype === "date" ) {
             labels = labels.map( d => $.fn.dataTable.defaults.formatDate(d) )
         }
