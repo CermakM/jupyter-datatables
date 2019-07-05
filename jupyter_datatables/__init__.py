@@ -80,7 +80,7 @@ def init_datatables_mode(options: dict = None, classes: list = None):
 
     bundles = OrderedDict()
 
-    if extensions.get("buttons", False):
+    if extensions.buttons:
         lib = "datatables.net-buttons"
 
         libs[lib] = "https://cdn.datatables.net/buttons/1.5.6/js/dataTables.buttons.min"
@@ -109,17 +109,17 @@ def init_datatables_mode(options: dict = None, classes: list = None):
         ] = "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts"
         shim["vfsfonts"] = {"deps": ["datatables.net"]}
 
-    if extensions.get("responsive", False):
+    if extensions.responsive:
         libs["datatables.responsive"] = (
             "https://cdn.datatables.net/" "responsive/2.2.2/js/dataTables.responsive.min"
         )  # Responsive
 
-    if extensions.get("scroller", False):
+    if extensions.scroller:
         libs["datatables.scroller"] = (
             "https://cdn.datatables.net/" "scroller/2.0.0/js/dataTables.scroller.min"
         )  # Scroll
 
-    if extensions.get("select", False):
+    if extensions.select:
         libs["datatables.select"] = (
             "https://cdn.datatables.net/" "select/1.3.0/js/dataTables.select.min"
         )  # Select
@@ -172,7 +172,10 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
     """Return DataTable representation of pandas DataFrame."""
     if options is None:
         options = {}
-        options.update(config.defaults.options)
+        options.update({
+            k: v for k, v in config.defaults.options.__dict__.items()
+            if not k.startswith("_")
+        })
 
     # column types
     options.update({'columnDefs': _get_columns_defs(self, options)})
@@ -188,13 +191,13 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
     """
 
     df = self
+    sample_size = config.defaults.sample_size or len(self)
 
     if config.defaults.limit is not None:
-        # compute the sample size, it will be used for the data preview
-        # to speed up computation
         n = len(self)
 
-        sample_size = n
+        # compute the sample size, it will be used for the data preview
+        # to speed up computation
         if len(self) > config.defaults.limit:
             sample_size = getattr(config.defaults, 'sample_size', None) or min([
                 n, _calculate_sample_size(n)
@@ -262,7 +265,7 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
 
     return f"""
         const sample_size = Number({sample_size}).toLocaleString();
-        const total = Number({n}).toLocaleString();
+        const total = Number({len(self)}).toLocaleString();
 
         element.append($('<p>').text(
             `Sample size: ${{sample_size}} out of ${{total}}`));
