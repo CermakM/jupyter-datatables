@@ -1,83 +1,12 @@
-define('jupyter-datatables', ["datatables.net", "graph-objects"], function (DT, go) {
+define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) {
   require('datatables.net')
 
-  let _ = require('underscore')
-  let events = require('base/js/events')
-  let d3 = require('d3')
+  const _      = require('underscore')
+  const d3     = require('d3')
+  const events = require('base/js/events')
 
-  const PLOT_WIDTH = 600
-
-  const PLOT_HEIGHT = 400
-
-  const PLOT_MARGIN = { left: 5, right: 5, top: 10, bottom: 10 }
-
-//  let plotTimeseries = function (x, y) {
-//    if (_.isUndefined(y)) {
-//      y = x
-//      x = [...Array(y.length).keys()]
-//    }
-//
-//    const data = d3.zip(x, y)
-//      .map((v) => _.object(['x', 'y'], v))
-//
-//    const radius = 7 // circle radius
-//
-//    let svgContainer = document.createElement('div')
-//    let svg = d3.select(svgContainer)
-//      .classed('svg-container', true)
-//      .append('svg')
-//      .attr('preserveAspectRatio', 'xMinYMin meet')
-//      .attr('viewBox', `0 0 ${PLOT_WIDTH} ${PLOT_HEIGHT}`)
-//      .classed('svg-content', true)
-//
-//    let g = svg
-//      .append('g')
-//      .classed('timeseries', true)
-//
-//    let xScale = d3.scaleTime()
-//      .domain(d3.extent(data, (d) => d.x))
-//      .nice()
-//      .range([PLOT_MARGIN.left, PLOT_WIDTH - PLOT_MARGIN.right])
-//
-//    let yScale = d3.scaleLinear()
-//      .domain([0, d3.max(data, (d) => d.y)])
-//      .nice()
-//      .range([PLOT_HEIGHT - PLOT_MARGIN.bottom, PLOT_MARGIN.top])
-//
-//    let areaPath = d3.area()
-//      .x((d) => xScale(d.x))
-//      .y0(PLOT_HEIGHT)
-//      .y1((d) => yScale(d.y))
-//      (data)
-//
-//    let linePath = d3.line()
-//      .x((d) => xScale(d.x))
-//      .y((d) => yScale(d.y))
-//      (data)
-//
-//    g.append('path')
-//      .classed('area', true)
-//      .attr('d', areaPath)
-//      .attr('fill', 'lightsteelblue')
-//
-//    g.append('path')
-//      .classed('line', true)
-//      .attr('d', linePath)
-//      .attr('fill', 'none')
-//      .attr('stroke', 'steelblue')
-//      .attr('stroke-width', 5)
-//
-//    g.selectAll('circle')
-//      .data(data)
-//      .enter()
-//      .append('circle')
-//      .attr('cx', (d) => xScale(d.x))
-//      .attr('cy', (d) => yScale(d.y))
-//      .attr('r', radius)
-//      .attr('fill', 'steelblue')
-//
-//    return svgContainer
-//  }
+  $.fn.dataTable.defaults.dateFormat = "ll"
+  $.fn.dataTable.defaults.formatDate = (t, format) => moment(t).format(format || $.fn.dataTable.defaults.dateFormat)
 
   $.fn.dataTable.Api.register('row.create()', function () {
     let row = $(this.row(0).node())
@@ -147,10 +76,8 @@ define('jupyter-datatables', ["datatables.net", "graph-objects"], function (DT, 
     return dTypeContainer
   }
 
-  let createDataPreview = function (data, dtype) {
-    console.debug("Creating data preview.")
-
-    data = data.sort()
+  let createDataPreview = function (data, index, dtype) {
+    console.debug("Creating data preview.", data, index, dtype)
 
     const defaults = $.fn.dataTable.defaults
 
@@ -176,7 +103,7 @@ define('jupyter-datatables', ["datatables.net", "graph-objects"], function (DT, 
 
     const plot = defaults.graphObjects[kind]
 
-    return plot(data)
+    return plot(data, index, dtype)
   }
 
   let createDataTable = function (table, options, buttons) {
@@ -219,18 +146,24 @@ define('jupyter-datatables', ["datatables.net", "graph-objects"], function (DT, 
             .removeAttr('aria-label')
             .attr('class', 'column-data-preview')
 
+          let index = []
+
           dataPreviewRow
             .children().each((i, e) => {
-              if ($(e).is('th')) return
+              let dtype = settings.aoColumns[i].sType
+              let data = dt.column(i).data().toArray()
+
+              if ($(e).is('th')) {
+                index.push({data: data, dtype: dtype, level: i})
+                return
+              }
 
               $(e)
                 .attr('class', 'column-data-preview')
                 .attr('role', 'figure')
                 .attr('aria-label', `data preview for column ${i}`)
 
-              let dtype = settings.aoColumns[i].sType
-              let data = dt.column(i).data().toArray()
-              let dataPreview = createDataPreview(data, dtype)
+              let dataPreview = createDataPreview(data, index, dtype)
 
               $(e).append(dataPreview)
             })

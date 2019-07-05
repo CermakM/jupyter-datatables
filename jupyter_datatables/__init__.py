@@ -186,25 +186,37 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
 
     console.debug("DataTable successfully created.");
     """
-    # compute the sample size, it will be used for the data preview
-    # to speed up computation
-    n = len(self)
-    sample_size = n
-    if n > config.defaults.limit:
-        sample_size = getattr(config.defaults, 'sample_size', None) or min([
-            n, _calculate_sample_size(n)
-        ])
 
-    idx = []
-    # get 5% of extremes from each column to account for outliers in the sample
-    # (if applicable)
-    for col in self.columns:
-        if self[col].dtype != "O":
-            idx.extend(self.nlargest(math.ceil(sample_size * 0.05), col).index)
-            idx.extend(self.nsmallest(math.ceil(sample_size * 0.05), col).index)
+    df = self
 
-    sample = pd.Index({*idx, *self.index[:sample_size]})
-    df = self.iloc[sample]
+    if config.defaults.limit is not None:
+        # compute the sample size, it will be used for the data preview
+        # to speed up computation
+        n = len(self)
+
+        sample_size = n
+        if len(self) > config.defaults.limit:
+            sample_size = getattr(config.defaults, 'sample_size', None) or min([
+                n, _calculate_sample_size(n)
+            ])
+
+        idx = []
+        # get 5% of extremes from each column to account for outliers in the sample
+        # (if applicable)
+        for col in self.columns:
+            if self[col].dtype != "O":
+                idx.extend(self.nlargest(math.ceil(sample_size * 0.05), col).index)
+                idx.extend(self.nsmallest(math.ceil(sample_size * 0.05), col).index)
+
+        sample_index = pd.Index({*idx, *self.index[:sample_size]})
+
+        df = self.loc[sample_index]
+
+    sort = config.defaults.sort
+    if sort == True or sort == 'index':
+        df.sort_index(inplace=True)
+    elif sort:
+        df.sort_values(inplace=True)
 
     sha = hashlib.sha256(
         df.to_json().encode()
