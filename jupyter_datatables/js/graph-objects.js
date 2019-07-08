@@ -6,7 +6,7 @@ define("graph-objects", ["moment", "chartjs", "d3"], function (moment, chartjs, 
 
     layout.width   = "150px"
     layout.margin  = "auto"
-    layout.padding = { left: 0, right: 0, top: 5, bottom: 5 }
+    layout.padding = { left: 2, right: 2, top: 5, bottom: 5 }
 
 
     let Line = function (data, index, dtype) {
@@ -41,6 +41,69 @@ define("graph-objects", ["moment", "chartjs", "d3"], function (moment, chartjs, 
                 type: 'line',
                 data: {
                     labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: 'rgb(255, 99, 132, 0.6)',
+                        borderColor: 'rgb(255, 99, 132)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    legend: {
+                        display: false
+                    },
+                    scales: {
+                        xAxes: [{
+                            ...(index.dtype === 'date' ? {type: 'time'} : {}),
+                            display: false
+                        }],
+                        yAxes: [{
+                            display: false,
+                            ticks: {
+                                beginAtZero: true
+                            }
+                        }]
+                    },
+                    responsive: false
+                }
+            });
+        })
+
+        return canvas
+    }
+
+    let Scatter = function (data, index, dtype) {
+
+        if ( _.isUndefined(index) ) {
+            index = [{
+                data : d3.range(0, data.length),
+                dtype: 'num',
+                level: 0
+            }]
+        }
+
+        index = index[0]  // TODO: Handle multi-index
+    
+        data = data.map( (d, i) => {
+            return {
+                x: index.data[i],
+                y: d
+            }
+        })
+
+        console.debug("Scatter plot data: ", data)
+
+        let canvas = $("<canvas>")
+            .attr("width", layout.width)
+            .css("margin", layout.margin)
+
+        canvas.ready(() => {
+
+            let ctx = canvas.get(0).getContext('2d');
+
+            barChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
                     datasets: [{
                         data: data,
                         backgroundColor: 'rgb(255, 99, 132, 0.6)',
