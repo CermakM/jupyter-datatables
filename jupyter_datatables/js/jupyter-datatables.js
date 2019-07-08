@@ -27,6 +27,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
   $.fn.dataTable.defaults.dTypeMap = {
     ...mapDType(['int8', 'int16', 'int32', 'int64', 'float8', 'float16', 'float32', 'float64'], "num"),
     ...mapDType(['datetime8[ns]', 'datetime16[ns]', 'datetime32[ns]', 'datetime64[ns]'], "date"),
+    ...mapDType(['timedelta8[ns]', 'timedelta16[ns]', 'timedelta32[ns]', 'timedelta64[ns]'], "string"), // TODO: Custom type `timedelta`
     ...mapDType(["object", "string"], "string"),
     ...mapDType(["bool"], "boolean"),
     ...mapDType(["default"], "num")
@@ -35,7 +36,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
   $.fn.dataTable.defaults.dTypePlotMap = {
     boolean:  ['CategoricalBar', 'Histogram'],
     date:     ['CategoricalBar', 'Histogram'],
-    num:      ['CategoricalBar', 'Bar', 'Histogram'],
+    num:      ['CategoricalBar', 'Bar', 'Line', 'Histogram'],
     string:   ['CategoricalBar', 'Histogram'],
 
     undefined: ['Bar']
