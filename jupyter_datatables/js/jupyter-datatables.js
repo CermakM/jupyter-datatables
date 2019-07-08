@@ -5,8 +5,8 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
   const d3     = require('d3')
   const events = require('base/js/events')
 
-  $.fn.dataTable.defaults.dateFormat = "ll"
-  $.fn.dataTable.defaults.formatDate = (t, format) => moment(t).format(format || $.fn.dataTable.defaults.dateFormat)
+  $.fn.dataTable.defaults.dateDisplayFormat = "YYYYMMDD"
+  $.fn.dataTable.defaults.formatDate = (t, format) => moment(t, format || $.fn.dataTable.defaults.dateDisplayFormat)
 
   $.fn.dataTable.Api.register('row.create()', function () {
     let row = $(this.row(0).node())
@@ -86,6 +86,11 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
 
     else if (!_.has(defaults.dTypePlotMap, dtype))
       throw new Error(`Unknown dtype '${dtype}'`)
+
+    if ( index.length > 1 ) {
+        console.warn("Multi-index is not supported yet. Picking the 0th level.")
+        // TODO: handle multi-index
+    }
 
     let kind = undefined
     for (let k of defaults.dTypePlotMap[dtype]) {

@@ -6,19 +6,15 @@ define("graph-objects", ["moment", "chartjs", "d3"], function (moment, chartjs, 
 
     layout.width   = "150px"
     layout.margin  = "auto"
-    layout.padding = 5
-
 
     let Bar = function (data, index, dtype) {
 
-        if (_.isUndefined(index)) {
-            index = {
+        if ( _.isUndefined(index) ) {
+            index = [{
                 data : d3.range(0, data.length),
                 dtype: 'num',
                 level: 0
-            }
-        } else if ( index.length > 1 ) {
-            console.warn("Multi-index is not supported yet. Picking the 0th level.")
+            }]
         }
 
         index = index[0]  // TODO: Handle multi-index
@@ -56,6 +52,7 @@ define("graph-objects", ["moment", "chartjs", "d3"], function (moment, chartjs, 
                     },
                     scales: {
                         xAxes: [{
+                            ...(index.dtype === 'date' ? {type: 'time'} : {}),
                             display: false
                         }],
                         yAxes: [{
@@ -77,8 +74,8 @@ define("graph-objects", ["moment", "chartjs", "d3"], function (moment, chartjs, 
     let CategoricalBar = function(data, index, dtype) {
 
         const grouped = d3.nest()
-            .key( d => d)
-            .rollup( d => d.length)
+            .key( d => d )
+            .rollup( d => d.length )
             .entries(data)
         
         const values = grouped.map( d => d.value) 
