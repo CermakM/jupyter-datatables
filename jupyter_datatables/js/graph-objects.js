@@ -256,7 +256,7 @@ define("graph-objects", ["moment", "chartjs", "d3"], function (moment, chartjs, 
         const chart = Bar(histogram_data, index, 'num')
 
         // point mapping
-        chart.mapDataPoint = (p) => console.warn("NotImplemented: Histogram point mapping is not implemented.")
+        // TODO: Implement point mapping for histogram tooltips
     }
 
 
