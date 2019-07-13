@@ -33,43 +33,40 @@ define("graph-objects", ["moment", "chartjs", "d3"], function (moment, chartjs, 
             .attr("width", layout.width)
             .css("margin", layout.margin)
 
-        canvas.ready(() => {
+        let ctx = canvas.get(0).getContext('2d');
 
-            let ctx = canvas.get(0).getContext('2d');
-
-            barChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: 'rgb(255, 99, 132, 0.6)',
-                        borderColor: 'rgb(255, 99, 132)',
-                        borderWidth: 1
+        let chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: 'rgb(255, 99, 132, 0.6)',
+                    borderColor: 'rgb(255, 99, 132)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                legend: {
+                    display: false
+                },
+                scales: {
+                    xAxes: [{
+                        ...(index.dtype === 'date' ? {type: 'time'} : {}),
+                        display: false
+                    }],
+                    yAxes: [{
+                        display: false,
+                        ticks: {
+                            beginAtZero: true
+                        }
                     }]
                 },
-                options: {
-                    legend: {
-                        display: false
-                    },
-                    scales: {
-                        xAxes: [{
-                            ...(index.dtype === 'date' ? {type: 'time'} : {}),
-                            display: false
-                        }],
-                        yAxes: [{
-                            display: false,
-                            ticks: {
-                                beginAtZero: true
-                            }
-                        }]
-                    },
-                    responsive: false
-                }
-            });
-        })
+                responsive: false
+            }
+        });
 
-        return canvas
+        return chart
     }
 
     let Scatter = function (data, index, dtype) {
@@ -96,43 +93,40 @@ define("graph-objects", ["moment", "chartjs", "d3"], function (moment, chartjs, 
         let canvas = $("<canvas>")
             .attr("width", layout.width)
             .css("margin", layout.margin)
-
-        canvas.ready(() => {
-
+        
             let ctx = canvas.get(0).getContext('2d');
 
-            barChart = new Chart(ctx, {
-                type: 'scatter',
-                data: {
-                    datasets: [{
-                        data: data,
-                        backgroundColor: 'rgb(255, 99, 132, 0.6)',
-                        borderColor: 'rgb(255, 99, 132)',
-                        borderWidth: 1
+        let chart = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    data: data,
+                    backgroundColor: 'rgb(255, 99, 132, 0.6)',
+                    borderColor: 'rgb(255, 99, 132)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                legend: {
+                    display: false
+                },
+                scales: {
+                    xAxes: [{
+                        ...(index.dtype === 'date' ? { type: 'time' } : {}),
+                        display: false
+                    }],
+                    yAxes: [{
+                        display: false,
+                        ticks: {
+                            beginAtZero: true
+                        }
                     }]
                 },
-                options: {
-                    legend: {
-                        display: false
-                    },
-                    scales: {
-                        xAxes: [{
-                            ...(index.dtype === 'date' ? {type: 'time'} : {}),
-                            display: false
-                        }],
-                        yAxes: [{
-                            display: false,
-                            ticks: {
-                                beginAtZero: true
-                            }
-                        }]
-                    },
-                    responsive: false
-                }
-            });
-        })
+                responsive: false
+            }
+        });
 
-        return canvas
+        return chart
     }
 
 
@@ -160,43 +154,41 @@ define("graph-objects", ["moment", "chartjs", "d3"], function (moment, chartjs, 
             .attr("width", layout.width)
             .css("margin", layout.margin)
 
-        canvas.ready(() => {
 
-            let ctx = canvas.get(0).getContext('2d');
+        let ctx = canvas.get(0).getContext('2d');
 
-            barChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: 'rgb(255, 99, 132)',
-                        borderColor: 'rgb(255, 99, 132)',
-                        borderWidth: 1
+        let chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: 'rgb(255, 99, 132)',
+                    borderColor: 'rgb(255, 99, 132)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                legend: {
+                    display: false
+                },
+                scales: {
+                    xAxes: [{
+                        ...(index.dtype === 'date' ? { type: 'time' } : {}),
+                        display: false
+                    }],
+                    yAxes: [{
+                        display: false,
+                        ticks: {
+                            beginAtZero: true
+                        }
                     }]
                 },
-                options: {
-                    legend: {
-                        display: false
-                    },
-                    scales: {
-                        xAxes: [{
-                            ...(index.dtype === 'date' ? {type: 'time'} : {}),
-                            display: false
-                        }],
-                        yAxes: [{
-                            display: false,
-                            ticks: {
-                                beginAtZero: true
-                            }
-                        }]
-                    },
-                    responsive: false
-                }
-            });
+                responsive: false
+            }
         })
 
-        return canvas
+        return chart
     }
 
 
@@ -211,8 +203,12 @@ define("graph-objects", ["moment", "chartjs", "d3"], function (moment, chartjs, 
         const labels = grouped.map( d => d.key) 
 
         index = [{level: 0, data: labels, dtype: dtype}]
-        
-        return Bar(values, index, 'num')
+        const chart = Bar(values, index, 'num')
+
+        // point mapping
+        chart.mapDataPoint = (p) => labels.indexOf(p.value)
+
+        return chart
     }
 
 
@@ -257,7 +253,10 @@ define("graph-objects", ["moment", "chartjs", "d3"], function (moment, chartjs, 
 
         index = [{level: 0, data: histogram_labels, dtype: dtype}]
 
-        return Bar(histogram_data, index, 'num')
+        const chart = Bar(histogram_data, index, 'num')
+
+        // point mapping
+        chart.mapDataPoint = (p) => console.warn("NotImplemented: Histogram point mapping is not implemented.")
     }
 
 

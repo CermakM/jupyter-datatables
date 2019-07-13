@@ -42,6 +42,15 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
     undefined: ['Bar']
   }
 
+  $.fn.dataTable.defaults.chartIconMap = {
+    bar    : 'chart-bar',
+    line   : 'chart-line',
+    scatter: 'palette',
+    pie    : 'chart-pie',
+    
+    default: 'chart-bar'
+  } 
+
   /**
      * Boolean type detector
      */
@@ -77,7 +86,59 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
     return dTypeContainer
   }
 
-  let createDataPreview = function (data, index, dtype) {
+  let showTooltip = function(chart, pointIndex, datasetIndex = 0) {
+    if( _.isUndefined(chart.tooltip._active) )
+      chart.tooltip._active = []
+
+    let activeElements = chart.tooltip._active
+    let requestedElement = chart.getDatasetMeta(datasetIndex).data[pointIndex]
+
+    for(var i = 0; i < activeElements.length; i++) {
+       if(requestedElement._index == activeElements[i]._index)  
+          return
+    }
+
+    activeElements.push(requestedElement)
+    console.log("Tooltips for elements: ", activeElements, requestedElement)
+    
+    chart.tooltip._active = activeElements
+    chart.tooltip.update(true)
+    chart.tooltip.pivot()
+    chart.draw()
+}
+
+
+  let hideTooltip = function (chart, pointIndex, datasetIndex = 0) {
+    let activeElements = chart.tooltip._active
+    if (_.isUndefined(activeElements) || activeElements.length == 0)
+      return
+
+    let requestedElement = chart.getDatasetMeta(datasetIndex).data[pointIndex]
+    for (var i = 0; i < activeElements.length; i++) {
+      if (requestedElement._index == activeElements[i]._index) {
+        activeElements.splice(i, 1)
+        break
+      }
+    }
+
+    chart.tooltip._active = activeElements
+    chart.tooltip.update(true)
+    chart.draw()
+  }
+
+  let hideAllTooltips = function (chart) {
+    let activeElements = chart.tooltip._active
+    if (_.isUndefined(activeElements) || activeElements.length == 0)
+      return
+
+    activeElements = []
+
+    chart.tooltip._active = activeElements
+    chart.tooltip.update(true)
+    chart.draw()
+  }
+
+  createDataPreview = function (data, index, dtype) {
     console.debug("Creating data preview.", data, index, dtype)
 
     const defaults = $.fn.dataTable.defaults
@@ -107,9 +168,34 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
         `Unable to find graph object for dtype '${dtype}' in: ${defaults.graphObjects}`
       )
 
-    const plot = defaults.graphObjects[kind]
+    const func = defaults.graphObjects[kind]
+    const chart = func(data, index, dtype)
+    
+    const container = $("<div/>", {class: 'dt-chart-container'})
+        .append(chart.canvas)
+    
+    events.on('hideAllTooltips.ChartJS', (e) => {
+        hideAllTooltips(chart)
+    })
 
-    return plot(data, index, dtype)
+    $(chart.canvas).on('showTooltip.ChartJS', (e, d) => {
+        hideAllTooltips(chart)
+        
+        // Show tooltip on certain data point
+        const dataPoint = d.data
+        
+        let datasetIndex;
+        if ( _.has(chart, 'mapDataPoint') ) {
+            datasetIndex = chart.mapDataPoint(dataPoint)
+        } else
+            datasetIndex = dataPoint.index
+       
+        console.log(chart, dataPoint, datasetIndex)
+        
+        showTooltip(chart, datasetIndex)
+    })
+
+    return container
   }
 
   let createDataTable = function (table, options, buttons) {
@@ -189,6 +275,30 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
         .columns.adjust()
       let btns = new $.fn.dataTable.Buttons(dt, {
         buttons: buttons
+      })
+
+      dt.on('mouseleave', 'tbody', function(e) {
+        events.trigger('hideAllTooltips.ChartJS')
+      })
+
+      dt.on('mouseenter', 'td', function (e) {
+        let cell = dt.cell(this)
+        let idx  = cell.index()
+
+        const dIndex = dt.row(idx.row).data()[0]
+        const dValue = dt.row(idx.row).data()[idx.column]
+
+        const canvas = $(dt.table().container())
+          .find('canvas')
+          .get(idx.column - 1)
+
+        $(canvas).trigger('showTooltip.ChartJS', {
+          cell: cell,
+          data: {
+            index: dIndex,
+            value: dValue
+          }
+        })
       })
 
       events.one('output_appended.OutputArea', () => {
