@@ -36,7 +36,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
   $.fn.dataTable.defaults.dTypePlotMap = {
     boolean:  ['CategoricalBar', 'Histogram'],
     date:     ['CategoricalBar', 'Histogram'],
-    num:      ['CategoricalBar', 'Bar', 'Line', 'Histogram'],
+    num:      ['Histogram', 'CategoricalBar', 'Bar', 'Line'],
     string:   ['CategoricalBar', 'Histogram'],
 
     undefined: ['Bar']
