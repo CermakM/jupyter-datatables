@@ -99,7 +99,6 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
     }
 
     activeElements.push(requestedElement)
-    console.log("Tooltips for elements: ", activeElements, requestedElement)
     
     chart.tooltip._active = activeElements
     chart.tooltip.update(true)
@@ -189,8 +188,6 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
             datasetIndex = chart.mapDataPoint(dataPoint)
         } else
             datasetIndex = dataPoint.index
-       
-        console.log(chart, dataPoint, datasetIndex)
         
         showTooltip(chart, datasetIndex)
     })
