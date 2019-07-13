@@ -257,6 +257,8 @@ define("graph-objects", ["moment", "chartjs", "d3"], function (moment, chartjs, 
 
         // point mapping
         // TODO: Implement point mapping for histogram tooltips
+
+        return chart
     }
 
 
