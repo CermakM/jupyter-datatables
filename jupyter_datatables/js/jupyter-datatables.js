@@ -177,7 +177,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
         hideAllTooltips(chart)
     })
 
-    $(chart.canvas).on('showTooltip.ChartJS', (e, d) => {
+    $(chart.canvas).on('show_tooltip.ChartJS', (e, d) => {
         hideAllTooltips(chart)
         
         // Show tooltip on certain data point
@@ -289,7 +289,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
           .find('canvas')
           .get(idx.column - 1)
 
-        $(canvas).trigger('showTooltip.ChartJS', {
+        $(canvas).trigger('show_tooltip.ChartJS', {
           cell: cell,
           data: {
             index: dIndex,
