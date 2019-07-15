@@ -1,4 +1,7 @@
-define("graph-objects", ["moment", "chartjs", "d3"], function (moment, chartjs, d3) {
+define("graph-objects", ["moment", "chartjs"], function (moment, chartjs) {
+
+    const d3 = Object.assign({}, require('d3'), require('d3-array'))  // extend the d3 with d3-array
+
 
     Chart.defaults.scale.gridLines.display = false
 
@@ -243,20 +246,21 @@ define("graph-objects", ["moment", "chartjs", "d3"], function (moment, chartjs, 
             .domain(d3.extent(data))
             .nice()
 
-        let bins = d3.histogram()
+        let hist = d3.histogram()
             .domain(xScale.domain())
             .thresholds(xScale.ticks(nBins))
-            (data)
+
+        let bins = hist(data)
 
         const histogram_data = bins.map((d) => d.length)
         const histogram_labels = bins.map((d) => d.x0)
 
-        index = [{level: 0, data: histogram_labels, dtype: dtype}]
+        index = [{ level: 0, data: histogram_labels, dtype: dtype }]
 
         const chart = Bar(histogram_data, index, 'num')
 
         // point mapping
-        // TODO: Implement point mapping for histogram tooltips
+        chart.mapDataPoint = (p) => d3.maxIndex(hist([p.value]))
 
         return chart
     }
