@@ -298,6 +298,33 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
         })
       })
 
+      events.on('before_finalize.JupyterRequire', function () {
+        const canvasElements = $('canvas')
+
+        console.log("Finalizing canvas elements...", canvasElements)
+        canvasElements.each((i, canvas) => {
+          const parent = canvas.parentNode
+          const dataURL = canvas.toDataURL('image/png')
+
+          const canvasPNG = $("<img/>", { src: dataURL, class: "dt-chart-image" }).get(0)
+
+          console.debug("\tResulting image: ", canvasPNG)
+
+          canvas.replaceWith(canvasPNG)
+        })
+
+        console.debug("\tDisabling buttons and search fields...")
+
+        $('a.paginate_button, .dt-button, input[type=search], .dataTables_length select')
+          .off('click')
+          .css('cursor', 'not-allowed')
+          .css('color', '#999')
+          .addClass('disabled')
+          .prop('disabled', true)
+
+        console.log("Canvas finalization completed successfully.")
+      })
+
       events.one('output_appended.OutputArea', () => {
         setTimeout(dt.columns.adjust, 50)
       })
