@@ -267,11 +267,13 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
     safe_execute(safe_script, table_id=digest)
 
     return f"""
+    (function() {{
         const sample_size = Number({sample_size}).toLocaleString();
         const total = Number({len(self)}).toLocaleString();
 
         element.append($('<p>').text(
             `Sample size: ${{sample_size}} out of ${{total}}`));
+    }}());
     """
 
 
