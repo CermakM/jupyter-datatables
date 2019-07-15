@@ -214,8 +214,9 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
                 idx.extend(self.nsmallest(math.ceil(sample_size * 0.05), col).index)
 
         sample_index = pd.Index({*idx, *self.index[:sample_size]})
-
         df = self.loc[sample_index]
+
+        sample_size = len(df)
 
     sort = config.defaults.sort
     if sort == True or sort == 'index':
