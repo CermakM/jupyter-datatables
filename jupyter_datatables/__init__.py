@@ -57,7 +57,9 @@ def init_datatables_mode(options: dict = None, classes: list = None):
     # extensions to be loaded
     extensions = config.defaults.extensions
 
-    require("d3", "https://cdnjs.cloudflare.com/ajax/libs/d3/5.9.2/d3.min")
+    require("d3", "https://d3js.org/d3.v5.min")
+    require("d3-array", "https://d3js.org/d3-array.v2.min")
+
     require.config(**{
         "paths": {
             "moment": "https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.8.0/moment",
