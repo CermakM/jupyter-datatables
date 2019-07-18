@@ -27,7 +27,9 @@ import hashlib
 import json
 import math
 import typing
+import warnings
 
+import numpy as np
 import pandas as pd
 
 from collections import OrderedDict
@@ -195,6 +197,13 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
     df = self
     sample_size = config.defaults.sample_size or len(self)
 
+    if sample_size > len(df):
+        raise ValueError(
+            f"Sample size cannot be larger than length of the table: {sample_size} > {len(df)}"
+        )
+
+    adjusted =  False
+
     if config.defaults.limit is not None:
         n = len(self)
 
@@ -208,13 +217,25 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
         idx = []
         # get 5% of extremes from each column to account for outliers in the sample
         # (if applicable)
+        fraction = math.ceil(sample_size * 0.05)
         for col in self.columns:
             if self[col].dtype != "O":
-                idx.extend(self.nlargest(math.ceil(sample_size * 0.05), col).index)
-                idx.extend(self.nsmallest(math.ceil(sample_size * 0.05), col).index)
+                # for comfortable preview, take the first 10 samples (if applicable)
+                idx.extend(self.index[:min(len(self), 10, sample_size)])
+                idx.extend(self.nlargest(fraction, col).index)
+                idx.extend(self.nsmallest(fraction, col).index)
+        
+        idx = set(idx)
+        random_index  = self.index.difference(idx)
+        random_sample = sample_size - min(len(idx), sample_size) if len(random_index) else 0
 
-        sample_index = pd.Index({*idx, *self.index[:sample_size]})
-        df = self.loc[sample_index]
+        sample_index = pd.Index({
+            *idx,
+            *np.random.choice(random_index, size=random_sample, replace=False)
+        })
+        adjusted = len(sample_index) != sample_size
+        
+        df = self.loc[sample_index].sort_index()
 
         sample_size = len(df)
 
@@ -269,10 +290,12 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
     return f"""
     (function() {{
         const sample_size = Number({sample_size}).toLocaleString();
+        const adjusted = Boolean('{adjusted}' == 'True')
+
         const total = Number({len(self)}).toLocaleString();
 
         element.append($('<p>').text(
-            `Sample size: ${{sample_size}} out of ${{total}}`));
+            `Sample size: ${{sample_size}} out of ${{total}} ${{ adjusted ? "(adjusted)" : "" }}`));
     }}());
     """
 
