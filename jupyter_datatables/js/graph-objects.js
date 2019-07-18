@@ -7,7 +7,7 @@ define("graph-objects", ["moment", "chartjs"], function (moment, chartjs) {
 
     const layout = Chart.defaults.global.layout
 
-    layout.width   = "171.5px"
+    layout.width   = "167.5px"
     layout.margin  = "auto"
     layout.padding = { left: 2, right: 2, top: 5, bottom: 5 }
 

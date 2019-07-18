@@ -153,22 +153,30 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
         // TODO: handle multi-index
     }
 
-    let kind = undefined
+
+    let kind, func, chart;
+
     for (let k of defaults.dTypePlotMap[dtype]) {
       if (_.has(defaults.graphObjects, k)) {
-        kind = k
-        break
+        kind  = k
+        func  = defaults.graphObjects[k]
+        chart = func(data, index, dtype)
+
+        if ( chart )
+          break
       }
       console.warn("Unknown plot kind: ", k)
     }
 
-    if ( _.isUndefined(kind) )
+    if (_.isUndefined(kind))
       throw new Error(
         `Unable to find graph object for dtype '${dtype}' in: ${defaults.graphObjects}`
       )
 
-    const func = defaults.graphObjects[kind]
-    const chart = func(data, index, dtype)
+    if ( _.isUndefined(chart) || chart === null )
+      throw new Error(
+        `Unable to produce graph object for dtype '${dtype}'`
+      )
     
     const container = $("<div/>", {class: 'dt-chart-container'})
         .append(chart.canvas)
