@@ -44,7 +44,7 @@ init_datatables_mode()
 That's it, your default pandas representation will now use Jupyter DataTables!
 
 ```python
-df = pd.DataFrame(np.abs(np.random.randn(50, 6)), columns=list(string.ascii_uppercase[:6]))
+df = pd.DataFrame(np.abs(np.random.randn(50, 5)), columns=list(string.ascii_uppercase[:5]))
 ```
 
 ![Jupyter Datatables table representation](https://raw.github.com/CermakM/jupyter-datatables/master/assets/images/jupyter-datatables.png)
@@ -73,46 +73,36 @@ df = pd.DataFrame(np.abs(np.random.randn(50, 20)), columns=list(string.ascii_upp
 
 <br>
 
-As per 0.2.0, there is a support for multiple dtypes like `object`, `categorical` and `datetime`.
+As per 0.3.0, there is a support for **interactive tooltips**:
 
+![Jupyter Datatables wide table representation](https://raw.github.com/CermakM/jupyter-datatables/master/assets/images/jupyter-datatables-tooltips.gif)
+
+
+And also support for custom indices including `Date` type:
 
 ```python
 dft = pd.DataFrame({'A': np.random.rand(5),
                     'B': [1, 1, 3, 2, 1],
-                    'C': 'foo',
-                    'C_': 'This is a very long sentence that should automatically be trimmed',
-                    'D': [
-                        pd.Timestamp('20010101'), pd.Timestamp('20010102'),
-                        pd.Timestamp('20010103'), pd.Timestamp('20010103'),
-                        pd.Timestamp('20010104')
-                    ],
+                    'C': 'This is a very long sentence that should automatically be trimmed',
+                    'D': [pd.Timestamp('20010101'), pd.Timestamp('20010102'), pd.Timestamp('20010103'), pd.Timestamp('20010104'), pd.Timestamp('20010105')],
                     'E': pd.Series([1.0] * 5).astype('float32'),
                     'F': [False, True, False, False, True],
-                    'G': pd.Series([1] * 5, dtype='int8')}
-                  )
+                   })
+
+dft.D = dft.D.apply(pd.to_datetime)
+dft.set_index('D', inplace=True)
 ```
-![Jupyter Datatables multiple dtypes representation](https://raw.github.com/CermakM/jupyter-datatables/master/assets/images/jupyter-datatables-dtypes.gif)
- 
+
+![Jupyter Datatables wide table representation](https://raw.github.com/CermakM/jupyter-datatables/master/assets/images/jupyter-datatables-datetime-tooltips.gif)
+
 ---
 
 <br>
 
-#### The future plans:
+#### Current status and future plans:
 
-- allow custom operations on the table:
-    - edit column name
-    - edit column type
-- handle multi index
-- handle nested data
-- improve plotting:
-    - performance and efficiency
-    - customizable
-    - resizable
-    - dockable
-    - draggable to a Jupyter cell (??)
-    
-- [stretch goal] increased performance and space efficiency by server-side processing -- lazy loading
+Check out the [Project Board](https://github.com/users/CermakM/projects/1) where we track issues and TODOs for our Jupyter tooling!
 
 ---
 
-> Author: Marek Cermak <macermak@redhat.com>, @AICoE - Project Thoth
+> Author: Marek Cermak <macermak@redhat.com>, @AICoE
