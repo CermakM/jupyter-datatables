@@ -1,8 +1,8 @@
 ipython
 ipykernel
 
-pandas
+pandas>=0.23.0
 scipy
 
 # nbextensions
-jupyter-require>=0.2.1
+jupyter-require>=0.3.0
