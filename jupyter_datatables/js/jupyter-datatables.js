@@ -213,8 +213,8 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
 
       this.settingsContainer = document.createElement('div', { is: 'dt-container' })
       this.settingsContainer.classList.add('dt-chart-settings-container')
-      $(this.settingsContainer).append(this.settings)
 
+      $(this.settingsContainer).append(this.settings)
       $(this.settingsContainer).css({ position: 'absolute' });
       $(this.settingsContainer).hide()
 
@@ -224,6 +224,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
 
       this.container = document.createElement('div', { is: 'dt-container' })
       this.container.classList.add("dt-chart-toolbar")
+
       $(this.container).append(this.settingsButton)
     }
 
@@ -364,8 +365,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
     chart.tooltip.update(true)
     chart.tooltip.pivot()
     chart.draw()
-}
-
+  }
 
   let hideTooltip = function (chart, pointIndex, datasetIndex = 0) {
     let activeElements = chart.tooltip._active
@@ -414,7 +414,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
       if (_.has(chart, 'mapDataPoint')) {
         datasetIndex = chart.mapDataPoint(dataPoint)
       } else
-        datasetIndex = dataPoint.index
+        datasetIndex = chart.data.labels.indexOf(dataPoint.index)
 
       showTooltip(chart, datasetIndex)
     })
