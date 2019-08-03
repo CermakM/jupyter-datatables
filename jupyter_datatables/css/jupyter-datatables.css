@@ -1,12 +1,38 @@
 /*
  * DataTables custom stylesheet
  *
- * @file main.css
+ * @file jupyter-datatables.css
  */
 
 
 .dt-buttons {
     padding-right: 10px;
+}
+
+.dt-chart-toolbar {
+    text-align: left;
+}
+
+.dt-chart-settings-container {
+    background-color: #fff;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-top: 2px solid #dbdbdb;
+    box-shadow: 0 8px 8px rgba(10,10,10,.1);
+    font-size: .875rem;
+    position: absolute;
+    z-index: 20;
+}
+
+.dt-chart-settings {
+    font-family: BlinkMacSystemFont,-apple-system,"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Fira Sans","Droid Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 1.10rem;
+}
+
+.dt-chart-menu-label:first-child {
+    margin-top: 5px;
+    margin-left: 5px;
+    font-size: 0.85em;
 }
 
 table.dataTable {
@@ -26,6 +52,12 @@ table.dataTable thead th, table.dataTable thead td {
 
 table.dataTable td.column-data-preview {
     padding: 11px 7px;
+}
+
+
+/* Allow overlay by menu content */
+.dataTables_scrollBody {
+    z-index: auto;
 }
 
 /* address double thead sorting rows */

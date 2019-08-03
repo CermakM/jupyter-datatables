@@ -52,8 +52,8 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
   } 
 
   /**
-     * Boolean type detector
-     */
+   * Boolean type detector
+   */
   $.fn.dataTable.ext.type.detect.unshift(function (data) {
     const dtype = 'boolean'
 
@@ -65,6 +65,205 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
 
     return null
   })
+
+  /* Components */
+
+  class DTContainer extends HTMLDivElement {
+    constructor() {
+      super()
+
+      this.attachShadow({ mode: 'open' })
+
+      // Bulma CSS
+      const bulmaStyle = document.createElement('style')
+      bulmaStyle.textContent = `@import url(https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.5/css/bulma.min.css);`
+
+      this.shadowRoot.appendChild(bulmaStyle)
+
+      // Jupyter DataTables CSS
+      $(this.shadowRoot).append($('style#jupyter-datatables-css').clone())
+
+      // classes
+      this.classList.add("dt-container")
+    }
+
+    connectedCallback() {
+      // FontAwesome icons
+      const fas = document.querySelector('link[href*="fontawesome"]');
+
+      if (fas) {
+        this.shadowRoot.appendChild(fas.cloneNode());
+      }
+    }
+
+    append(e) {
+      this.shadowRoot.append(e)
+    }
+
+    appendChild(node) {
+      this.shadowRoot.appendChild(node)
+    }
+  }
+
+
+  class DTChartList extends HTMLUListElement {
+
+    constructor() {
+      super()
+
+      for (const cType in $.fn.dataTable.defaults.graphObjects) {
+        const li = document.createElement("li")
+        const a = document.createElement("a")
+
+        a.setAttribute("role", "button")
+        a.setAttribute("aria-disabled", false)
+        a.setAttribute("aria-pressed", false)
+
+        a.setAttribute("data-chart_type", cType)
+        a.setAttribute("data-label", 'button-chart-type')
+
+        a.style = "text-transform: capitalize"
+        a.textContent = `${cType} chart`
+
+        a.classList.add("dt-button")
+        a.classList.add("dt-chart-type")
+
+        li.appendChild(a)
+
+        this.appendChild(li)
+      }
+
+      this.classList.add("menu-list")
+      this.classList.add("dt-chart-list")
+    }
+  }
+
+  customElements.define('dt-container', DTContainer, { extends: 'div' })
+  customElements.define('dt-chart-list', DTChartList, { extends: 'ul' })
+
+  /* Templates */
+
+  _.templateSettings = {
+    escape: /\{\{%-([\s\S]+?)%\}\}/g,
+    evaluate: /\{\{%([\s\S]+?)%\}\}/g,
+    interpolate: /\{\{(.+?)\}\}/g,
+  };
+
+  DTSettingsButtonComponentTemplate = _.template(`
+    <div class="button is-small dt-chart-settings-button">
+        <figure class="bd-link-figure">
+            <span class="icon">
+                <i class="fas fa-ellipsis-v"></i>
+            </span>
+
+        </figure>
+    </div>
+`)
+
+  DTSettingsComponentTemplate = _.template(`
+    <div class="menu dt-chart-settings">
+        <p class="menu-label dt-chart-menu-label">Charts</p>
+        <ul class="menu-list">
+            <li>
+                <a>Kind</a>
+                <ul is="dt-chart-list"></ul>
+            </li>
+        </ul>
+    </div>
+`)
+
+  createElementFromTemplate = function (template, context) {
+    tmp = document.implementation.createHTMLDocument()
+    tmp.body.innerHTML = template(context)
+
+    return tmp.body.children[0]
+  }
+
+  /* Toolbar */
+
+  Toolbar = class {
+    constructor(chart) {
+      this.chart = chart
+
+      this.settings = createElementFromTemplate(DTSettingsComponentTemplate)
+      this.settingsButton = createElementFromTemplate(DTSettingsButtonComponentTemplate)
+
+      $(this.settingsButton).click((e) => {
+        if (this.settingsContainer.style.display != 'none') {
+          // this.settings already visible, just toggle
+          $(this.settingsContainer).hide()
+        } else {
+          const offset = {}
+          const margin = { top: 20, left: 0 }
+
+          offset.top = $(this.settingsButton).offset().top - $(output_area.element).offset().top
+          offset.top = offset.top + margin.top
+
+          offset.left = $(this.settingsButton).offset().left - $(output_area.element).offset().left
+          offset.left = offset.left + margin.left
+
+          $(this.settingsContainer).css(offset).show()
+
+          // click anywhere else hides the this.settings
+          setTimeout(() => {
+            $(document).one('click', () => $(this.settingsContainer).hide())
+          }, 20)
+        }
+      })
+
+      this.settingsContainer = document.createElement('div', { is: 'dt-container' })
+      this.settingsContainer.classList.add('dt-chart-settings-container')
+      $(this.settingsContainer).append(this.settings)
+
+      $(this.settingsContainer).css({ position: 'absolute' });
+      $(this.settingsContainer).hide()
+
+      // Append to the output area to allow overlay
+      const output_area = Jupyter.notebook.get_executed_cell().output_area
+      $(output_area.element).append(this.settingsContainer)
+
+      this.container = document.createElement('div', { is: 'dt-container' })
+      this.container.classList.add("dt-chart-toolbar")
+      $(this.container).append(this.settingsButton)
+    }
+
+    onClick(callback, selector) {
+      let selection = $(this.settings).find(selector)
+
+      if (selection.length <= 0)
+        throw new Error(`Selector '${selector}' dit not match any elements.`)
+
+      selection.each((i, elt) => {
+        $(elt).click(e => {
+          e.preventDefault()
+          callback.call(elt, e, this.chart)
+
+          $(this.settings).hide()
+        })
+      })
+    }
+  }
+
+  createDataToolbar = function (chart, data, index, dtype) {
+    const toolbar = new Toolbar(chart)
+
+    setTimeout(() => {
+      toolbar.onClick(function (event, chart) {
+        console.debug('Updating chart:', chart)
+
+        const go = this.dataset.chart_type
+        const container = createDataPreview(data, index, dtype, go)
+
+        chart.destroy()
+        chart.container.replaceWith(container)
+
+      }, "a.dt-chart-type")
+    }, 100)
+
+    return toolbar
+  }
+
+  /* Data Preview */
 
   let createDTypePreview = function (dtype) {
     const dTypeContainer = $('<div>')
@@ -84,6 +283,67 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
     dTypeOptions.forEach((opt) => opt.appendTo(dTypeSelect))
 
     return dTypeContainer
+  }
+
+  createDataPreview = function (data, index, dtype, go) {
+    console.debug("Creating data preview.", data, index, dtype)
+
+    const defaults = $.fn.dataTable.defaults
+
+    if (_.isUndefined(dtype))
+      console.warn('Data type was not provided.')
+
+    else if (!_.has(defaults.dTypePlotMap, dtype))
+      throw new Error(`Unknown dtype '${dtype}'.`)
+
+    if (index.length > 1) {
+      console.warn("Multi-index is not supported yet. Picking the 0th level.")
+      // TODO: handle multi-index
+    }
+
+    //   let kind, plot, chart;
+    let kind, plot;
+
+    if (_.isUndefined(go)) {
+      console.warn('Graph object was not provided.')
+
+      for (let k of defaults.dTypePlotMap[dtype]) {
+        if (_.has(defaults.graphObjects, k)) {
+          kind = k
+          plot = defaults.graphObjects[k]
+          chart = plot(data, index, dtype)
+
+          if (chart)
+            break
+        }
+        console.warn("Unknown plot kind: ", k)
+      }
+
+      if (_.isUndefined(kind))
+        throw new Error(
+          `Unable to find graph object for dtype '${dtype}' in: ${defaults.graphObjects}`
+        )
+    } else {
+      plot = _.isString(go) ? defaults.graphObjects[go] : go
+      chart = plot(data, index, dtype)
+    }
+
+    if (_.isUndefined(chart) || chart === null)
+      throw new Error(
+        `Unable to produce graph object for dtype '${dtype}'`
+      )
+
+    register_chart_events(chart)
+
+    console.debug("Data preview has been created: ", chart)
+
+    toolbar = createDataToolbar(chart, data, index, dtype)
+
+    chart.container = $("<div/>", { class: 'dt-chart-container' })
+      .append(toolbar.container)
+      .append(chart.canvas)
+
+    return chart.container
   }
 
   let showTooltip = function(chart, pointIndex, datasetIndex = 0) {
@@ -125,6 +385,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
     chart.draw()
   }
 
+
   let hideAllTooltips = function (chart) {
     let activeElements = chart.tooltip._active
     if (_.isUndefined(activeElements) || activeElements.length == 0)
@@ -137,70 +398,26 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
     chart.draw()
   }
 
-  createDataPreview = function (data, index, dtype) {
-    console.debug("Creating data preview.", data, index, dtype)
 
-    const defaults = $.fn.dataTable.defaults
-
-    if (_.isUndefined(dtype))
-      console.warn('Data type was not provided')
-
-    else if (!_.has(defaults.dTypePlotMap, dtype))
-      throw new Error(`Unknown dtype '${dtype}'`)
-
-    if ( index.length > 1 ) {
-        console.warn("Multi-index is not supported yet. Picking the 0th level.")
-        // TODO: handle multi-index
-    }
-
-
-    let kind, func, chart;
-
-    for (let k of defaults.dTypePlotMap[dtype]) {
-      if (_.has(defaults.graphObjects, k)) {
-        kind  = k
-        func  = defaults.graphObjects[k]
-        chart = func(data, index, dtype)
-
-        if ( chart )
-          break
-      }
-      console.warn("Unknown plot kind: ", k)
-    }
-
-    if (_.isUndefined(kind))
-      throw new Error(
-        `Unable to find graph object for dtype '${dtype}' in: ${defaults.graphObjects}`
-      )
-
-    if ( _.isUndefined(chart) || chart === null )
-      throw new Error(
-        `Unable to produce graph object for dtype '${dtype}'`
-      )
-    
-    const container = $("<div/>", {class: 'dt-chart-container'})
-        .append(chart.canvas)
-    
+  let register_chart_events = function (chart) {
     events.on('hideAllTooltips.ChartJS', (e) => {
-        hideAllTooltips(chart)
+      hideAllTooltips(chart)
     })
 
     $(chart.canvas).on('show_tooltip.ChartJS', (e, d) => {
-        hideAllTooltips(chart)
-        
-        // Show tooltip on certain data point
-        const dataPoint = d.data
-        
-        let datasetIndex;
-        if ( _.has(chart, 'mapDataPoint') ) {
-            datasetIndex = chart.mapDataPoint(dataPoint)
-        } else
-            datasetIndex = dataPoint.index
-        
-        showTooltip(chart, datasetIndex)
-    })
+      hideAllTooltips(chart)
 
-    return container
+      // Show tooltip on certain data point
+      const dataPoint = d.data
+
+      let datasetIndex;
+      if (_.has(chart, 'mapDataPoint')) {
+        datasetIndex = chart.mapDataPoint(dataPoint)
+      } else
+        datasetIndex = dataPoint.index
+
+      showTooltip(chart, datasetIndex)
+    })
   }
 
   let createDataTable = function (table, options, buttons) {
