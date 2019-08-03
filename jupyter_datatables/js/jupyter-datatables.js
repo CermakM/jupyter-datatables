@@ -158,7 +158,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
 
         </figure>
     </div>
-`)
+  `)
 
   DTSettingsComponentTemplate = _.template(`
     <div class="menu dt-chart-settings">
@@ -170,7 +170,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
             </li>
         </ul>
     </div>
-`)
+  `)
 
   createElementFromTemplate = function (template, context) {
     tmp = document.implementation.createHTMLDocument()
@@ -182,8 +182,9 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
   /* Toolbar */
 
   Toolbar = class {
-    constructor(chart) {
+    constructor(chart, dtype) {
       this.chart = chart
+      this.dtype = dtype
 
       this.settings = createElementFromTemplate(DTSettingsComponentTemplate)
       this.settingsButton = createElementFromTemplate(DTSettingsButtonComponentTemplate)
@@ -203,6 +204,22 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
           offset.left = offset.left + margin.left
 
           $(this.settingsContainer).css(offset).show()
+
+          // check which chart types are not allowed for the current dtype and disable them
+          if (!_.isUndefined(this.dtype)) {
+            const allowedChartTypes = $.fn.dataTable.defaults.dTypePlotMap[this.dtype]
+
+            $(this.settings).find('.dt-chart-type').each((i, e) => {
+              const chartType = e.innerText.replace(/\\schart/i, '')
+
+              if (!allowedChartTypes.includes(chartType)) {
+                $(e).addClass('is-disabled')
+                console.debug(`Chart type '${chartType}' is not allowed for dtype '${dtype}'`)
+              } else {
+                $(e).removeClass('is-disabled')
+              }
+            })
+          }
 
           // click anywhere else hides the this.settings
           setTimeout(() => {
@@ -246,7 +263,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
   }
 
   createDataToolbar = function (chart, data, index, dtype) {
-    const toolbar = new Toolbar(chart)
+    const toolbar = new Toolbar(chart, dtype)
 
     setTimeout(() => {
       toolbar.onClick(function (event, chart) {

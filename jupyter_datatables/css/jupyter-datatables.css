@@ -5,8 +5,12 @@
  */
 
 
-.dt-buttons {
-    padding-right: 10px;
+.dt-button.is-disabled {
+    background-color: #fff;
+    border-color: #dbdbdb;
+    box-shadow: none;
+    opacity: .5;
+    cursor: not-allowed;
 }
 
 .dt-chart-toolbar {
