@@ -267,10 +267,11 @@ define("graph-objects", ["moment", "chartjs"], function (moment, chartjs) {
 
 
     return {
-        Line: Line,
         Bar: Bar,
         CategoricalBar: CategoricalBar,
-        Histogram: Histogram
+        Histogram: Histogram,
+        Line: Line,
+        Scatter: Scatter,
     }
 
 })
