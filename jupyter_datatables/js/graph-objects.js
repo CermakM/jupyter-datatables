@@ -13,6 +13,7 @@ define("graph-objects", ["moment", "chartjs"], function (moment, chartjs) {
 
 
     let Line = function (data, index, dtype) {
+        this.name = 'Line'
 
         if ( _.isUndefined(index) ) {
             index = [{
@@ -73,6 +74,7 @@ define("graph-objects", ["moment", "chartjs"], function (moment, chartjs) {
     }
 
     let Scatter = function (data, index, dtype) {
+        this.name = 'Scatter'
 
         if ( _.isUndefined(index) ) {
             index = [{
@@ -134,6 +136,7 @@ define("graph-objects", ["moment", "chartjs"], function (moment, chartjs) {
 
 
     let Bar = function (data, index, dtype) {
+        this.name = 'Bar'
 
         if ( _.isUndefined(index) ) {
             index = [{
@@ -196,6 +199,7 @@ define("graph-objects", ["moment", "chartjs"], function (moment, chartjs) {
 
 
     let CategoricalBar = function(data, index, dtype) {
+        this.name = 'CategoricalBar'
 
         const grouped = d3.nest()
             .key( d => d )
@@ -232,6 +236,8 @@ define("graph-objects", ["moment", "chartjs"], function (moment, chartjs) {
 
 
     let Histogram = function (data, index, dtype) {
+        this.name = 'Histogram'
+
         // map to the Number data type and sort
         data = Array.prototype.map.call(data, Number).sort(d3.ascending)
 

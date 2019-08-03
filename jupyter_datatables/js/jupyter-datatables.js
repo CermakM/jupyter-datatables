@@ -111,7 +111,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
     constructor() {
       super()
 
-      for (const cType in $.fn.dataTable.defaults.graphObjects) {
+      for (const chartName in $.fn.dataTable.defaults.graphObjects) {
         const li = document.createElement("li")
         const a = document.createElement("a")
 
@@ -119,11 +119,11 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
         a.setAttribute("aria-disabled", false)
         a.setAttribute("aria-pressed", false)
 
-        a.setAttribute("data-chart_type", cType)
+        a.setAttribute("data-chart_name", chartName)
         a.setAttribute("data-label", 'button-chart-type')
 
         a.style = "text-transform: capitalize"
-        a.textContent = `${cType} chart`
+        a.textContent = `${chartName} chart`
 
         a.classList.add("dt-button")
         a.classList.add("dt-chart-type")
@@ -205,16 +205,19 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
 
           $(this.settingsContainer).css(offset).show()
 
-          // check which chart types are not allowed for the current dtype and disable them
           if (!_.isUndefined(this.dtype)) {
             const allowedChartTypes = $.fn.dataTable.defaults.dTypePlotMap[this.dtype]
 
             $(this.settings).find('.dt-chart-type').each((i, e) => {
-              const chartType = e.innerText.replace(/\\schart/i, '')
+              const chartName = e.dataset.chart_name
 
-              if (!allowedChartTypes.includes(chartType)) {
+              // check active chart type
+              $(e).toggleClass('is-active', chartName === chart.name)
+
+              // check which chart types are not allowed for the current dtype and disable them
+              if (!allowedChartTypes.includes(chartName)) {
                 $(e).addClass('is-disabled')
-                console.debug(`Chart type '${chartType}' is not allowed for dtype '${dtype}'`)
+                console.debug(`Chart type '${chartName}' is not allowed for dtype '${dtype}'`)
               } else {
                 $(e).removeClass('is-disabled')
               }
@@ -269,7 +272,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
       toolbar.onClick(function (event, chart) {
         console.debug('Updating chart:', chart)
 
-        const go = this.dataset.chart_type
+        const go = this.dataset.chart_name
         const container = createDataPreview(data, index, dtype, go)
 
         chart.destroy()
@@ -320,7 +323,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
     }
 
     //   let kind, plot, chart;
-    let kind, plot;
+    let kind, GraphObject;
 
     if (_.isUndefined(go)) {
       console.warn('Graph object was not provided.')
@@ -328,9 +331,9 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
       for (let k of defaults.dTypePlotMap[dtype]) {
         if (_.has(defaults.graphObjects, k)) {
           kind = k
-          plot = defaults.graphObjects[k]
-          chart = plot(data, index, dtype)
+          GraphObject = defaults.graphObjects[k]
 
+          chart = GraphObject(data, index, dtype)
           if (chart)
             break
         }
@@ -342,9 +345,12 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
           `Unable to find graph object for dtype '${dtype}' in: ${defaults.graphObjects}`
         )
     } else {
-      plot = _.isString(go) ? defaults.graphObjects[go] : go
-      chart = plot(data, index, dtype)
+      GraphObject = _.isString(go) ? defaults.graphObjects[go] : go
+      chart = new GraphObject(data, index, dtype)
     }
+
+    // set chart name for future reference
+    chart.name = GraphObject.name
 
     if (_.isUndefined(chart) || chart === null)
       throw new Error(
