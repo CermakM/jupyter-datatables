@@ -1,13 +1,14 @@
 define('jupyter-datatables', [
+  'underscore',
   'moment',
   'dt-config',
   'dt-components',
   'dt-graph-objects',
   'dt-toolbar',
-], function (moment, config, components, go, Toolbar) {
+  'dt-tooltips',
+], function (_, moment, config, components, go, Toolbar, tooltips) {
   require('datatables.net')
 
-  const _ = require('underscore')
   const d3 = require('d3')
   const events = require('base/js/events')
 
@@ -40,6 +41,26 @@ define('jupyter-datatables', [
     return null
   })
 
+  let createDTypePreview = function (dtype) {
+    const dTypeContainer = $('<div>')
+      .attr('class', 'dtype-container')
+
+    // dtype element
+    const dTypeSelect = $('<select>')
+      .attr('role', 'option')
+      .attr('class', 'dtype')
+      .appendTo(dTypeContainer)
+
+    const dTypeOptions = [
+      $('<option>').attr('value', dtype).text(dtype)
+      // TODO: other options suitable for this column
+    ]
+
+    dTypeOptions.forEach((opt) => opt.appendTo(dTypeSelect))
+
+    return dTypeContainer
+  }
+
   let createDataToolbar = function (chart, data, index, dtype) {
     const toolbar = new Toolbar(chart, dtype)
 
@@ -64,26 +85,6 @@ define('jupyter-datatables', [
     }, 100)
 
     return toolbar
-  }
-
-  let createDTypePreview = function (dtype) {
-    const dTypeContainer = $('<div>')
-      .attr('class', 'dtype-container')
-
-    // dtype element
-    const dTypeSelect = $('<select>')
-      .attr('role', 'option')
-      .attr('class', 'dtype')
-      .appendTo(dTypeContainer)
-
-    const dTypeOptions = [
-      $('<option>').attr('value', dtype).text(dtype)
-      // TODO: other options suitable for this column
-    ]
-
-    dTypeOptions.forEach((opt) => opt.appendTo(dTypeSelect))
-
-    return dTypeContainer
   }
 
   let createDataPreview = function (data, index, dtype, go) {
@@ -131,7 +132,7 @@ define('jupyter-datatables', [
       )
     }
 
-    register_chart_events(chart)
+    registerChartEvents(chart)
 
     console.debug('Data preview has been created: ', chart)
 
@@ -141,74 +142,6 @@ define('jupyter-datatables', [
       .append(chart.canvas)
 
     return chart.container
-  }
-
-  let showTooltip = function (chart, pointIndex, datasetIndex = 0) {
-    if (chart.animating) return // chart is still in animation process
-
-    if (_.isUndefined(chart.tooltip._active)) { chart.tooltip._active = [] }
-
-    let activeElements = chart.tooltip._active
-    let requestedElement = chart.getDatasetMeta(datasetIndex).data[pointIndex]
-
-    for (var i = 0; i < activeElements.length; i++) {
-      if (requestedElement._index == activeElements[i]._index) { return }
-    }
-
-    activeElements.push(requestedElement)
-
-    chart.tooltip._active = activeElements
-    chart.tooltip.update(true)
-    chart.tooltip.pivot()
-    chart.draw()
-  }
-
-  let hideTooltip = function (chart, pointIndex, datasetIndex = 0) {
-    let activeElements = chart.tooltip._active
-    if (_.isUndefined(activeElements) || activeElements.length == 0) { return }
-
-    let requestedElement = chart.getDatasetMeta(datasetIndex).data[pointIndex]
-    for (var i = 0; i < activeElements.length; i++) {
-      if (requestedElement._index == activeElements[i]._index) {
-        activeElements.splice(i, 1)
-        break
-      }
-    }
-
-    chart.tooltip._active = activeElements
-    chart.tooltip.update(true)
-    chart.draw()
-  }
-
-  let hideAllTooltips = function (chart) {
-    let activeElements = chart.tooltip._active
-    if (_.isUndefined(activeElements) || activeElements.length == 0) { return }
-
-    activeElements = []
-
-    chart.tooltip._active = activeElements
-    chart.tooltip.update(true)
-    chart.draw()
-  }
-
-  let register_chart_events = function (chart) {
-    events.on('hide_all_tooltips.ChartJS', () => {
-      hideAllTooltips(chart)
-    })
-
-    $(chart.canvas).on('show_tooltip.ChartJS', (e, d) => {
-      hideAllTooltips(chart)
-
-      // Show tooltip on certain data point
-      const dataPoint = d.data
-
-      let datasetIndex
-      if (_.has(chart, 'mapDataPoint')) {
-        datasetIndex = chart.mapDataPoint(dataPoint)
-      } else { datasetIndex = chart.data.labels.indexOf(dataPoint.index) }
-
-      showTooltip(chart, datasetIndex)
-    })
   }
 
   let createDataTable = function (table, options, buttons) {
@@ -347,27 +280,27 @@ define('jupyter-datatables', [
     })
   }
 
-  /**
-	   * Create HTML table from raw String and append it to an element
-	   *
-	   * @param {String} html
-	   * @param {Element} element
-	   */
-  let appendTable = function (html, element) {
-    return new Promise((resolve) => {
-      const table = $.parseHTML(html)
+  let registerChartEvents = function (chart) {
+    events.on('hide_all_tooltips.ChartJS', () => {
+      tooltips.hideAllTooltips(chart)
+    })
 
-      $(table).ready(() => {
-        element.append(table)
-        resolve(table)
-      })
+    $(chart.canvas).on('show_tooltip.ChartJS', (e, d) => {
+      tooltips.hideAllTooltips(chart)
+
+      // Show tooltip on certain data point
+      const dataPoint = d.data
+
+      let datasetIndex
+      if (_.has(chart, 'mapDataPoint')) {
+        datasetIndex = chart.mapDataPoint(dataPoint)
+      } else { datasetIndex = chart.data.labels.indexOf(dataPoint.index) }
+
+      tooltips.showTooltip(chart, datasetIndex)
     })
   }
 
-  /**
-	 * Initialize events
-	 */
-  let initDataTableEvents = function () {
+  let registerDataTableEvents = function () {
     // Focus search field event
     $(document).on('focus', '.dataTables_filter input', function (e) {
       setTimeout(() => {
@@ -398,12 +331,29 @@ define('jupyter-datatables', [
   }
 
   /**
+	   * Create HTML table from raw String and append it to an element
+	   *
+	   * @param {String} html
+	   * @param {Element} element
+	   */
+  let appendTable = function (html, element) {
+    return new Promise((resolve) => {
+      const table = $.parseHTML(html)
+
+      $(table).ready(() => {
+        element.append(table)
+        resolve(table)
+      })
+    })
+  }
+
+  /**
 	   * Create DataTable from raw string and append it to an element
 	   */
   return appendDataTable = async function (html, options, buttons, element) {
     const table = await appendTable(html, element)
 
-    initDataTableEvents()
+    registerDataTableEvents()
 
     return createDataTable(table, options, buttons)
   }

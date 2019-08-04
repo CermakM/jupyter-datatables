@@ -176,6 +176,10 @@ def init_datatables_mode(options: dict = None, classes: list = None):
         {"id": "dt-toolbar-js"})
 
     load_js(
+        Path(_HERE, "js/tooltips.js").read_text(encoding="utf-8"),
+        {"id": "dt-tooltips-js"})
+
+    load_js(
         Path(_HERE, "js/jupyter-datatables.js").read_text(encoding="utf-8"),
         {"id": "jupyter-datatables-js"})
 
@@ -275,6 +279,7 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
             "dt-components",
             "dt-graph-objects",
             "dt-toolbar",
+            "dt-tooltips",
             "jupyter-datatables"
         ],
         html=html,
