@@ -217,8 +217,10 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
               // check which chart types are not allowed for the current dtype and disable them
               if (!allowedChartTypes.includes(chartName)) {
                 $(e).addClass('is-disabled')
+
                 console.debug(`Chart type '${chartName}' is not allowed for dtype '${dtype}'`)
               } else {
+                // in case dtype changes for some reason
                 $(e).removeClass('is-disabled')
               }
             })

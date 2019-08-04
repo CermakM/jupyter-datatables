@@ -9,8 +9,11 @@
     background-color: #fff;
     border-color: #dbdbdb;
     box-shadow: none;
+
     opacity: .5;
+
     cursor: not-allowed;
+    pointer-events: none;
 }
 
 .dt-chart-toolbar {
