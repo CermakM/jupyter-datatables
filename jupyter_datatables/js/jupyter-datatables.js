@@ -392,6 +392,8 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
   }
 
   let showTooltip = function(chart, pointIndex, datasetIndex = 0) {
+    if (chart.animating) return  // chart is still in animation process
+
     if( _.isUndefined(chart.tooltip._active) )
       chart.tooltip._active = []
 
