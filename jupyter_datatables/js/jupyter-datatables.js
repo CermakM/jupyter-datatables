@@ -37,19 +37,10 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
     boolean:  ['CategoricalBar', 'Histogram'],
     date:     ['CategoricalBar', 'Histogram'],
     num:      ['Histogram', 'CategoricalBar', 'Bar', 'Line'],
-    string:   ['CategoricalBar', 'Histogram'],
+    string:   ['CategoricalBar'],
 
     undefined: ['Bar']
   }
-
-  $.fn.dataTable.defaults.chartIconMap = {
-    bar    : 'chart-bar',
-    line   : 'chart-line',
-    scatter: 'palette',
-    pie    : 'chart-pie',
-    
-    default: 'chart-bar'
-  } 
 
   /**
    * Boolean type detector
