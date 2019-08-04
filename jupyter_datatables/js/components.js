@@ -1,5 +1,4 @@
-define('dt-components', ['moment', 'chartjs'], function (moment, chartjs) {
-  const d3 = Object.assign({}, require('d3'), require('d3-array')) // extend the d3 with d3-array
+define('dt-components', function () {
 
   _.templateSettings = {
     escape: /\{\{%-([\s\S]+?)%\}\}/g,
