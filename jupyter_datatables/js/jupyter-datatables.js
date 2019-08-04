@@ -1,4 +1,4 @@
-define('jupyter-datatables', ['moment', 'graph-objects'], function (moment, go) {
+define('jupyter-datatables', ['moment', 'dt-components', 'dt-graph-objects'], function (moment, components, go) {
   require('datatables.net')
 
   const _ = require('underscore')
@@ -62,12 +62,12 @@ define('jupyter-datatables', ['moment', 'graph-objects'], function (moment, go) 
       this.chart = chart
       this.dtype = dtype
 
-      this.settings = createElementFromTemplate(DTSettingsComponentTemplate)
-      this.settingsButton = createElementFromTemplate(DTSettingsButtonComponentTemplate)
+      this.settings = components.createElementFromTemplate(components.templates.DTSettingsComponentTemplate)
+      this.settingsButton = components.createElementFromTemplate(components.templates.DTSettingsButtonComponentTemplate)
 
       $(this.settingsButton).click(() => {
         if (this.settingsContainer.style.display != 'none') {
-          // this.settings already visible, just toggle
+          // settings already visible, just toggle
           $(this.settingsContainer).hide()
         } else {
           const offset = {}
@@ -101,7 +101,7 @@ define('jupyter-datatables', ['moment', 'graph-objects'], function (moment, go) 
             })
           }
 
-          // click anywhere else hides the this.settings
+          // click anywhere else hides the settings
           setTimeout(() => {
             $(document).one('click', () => $(this.settingsContainer).hide())
           }, 20)

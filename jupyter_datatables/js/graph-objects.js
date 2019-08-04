@@ -1,4 +1,4 @@
-define('graph-objects', ['moment', 'chartjs'], function (moment, chartjs) {
+define('dt-graph-objects', ['moment', 'chartjs'], function (moment, chartjs) {
   const d3 = Object.assign({}, require('d3'), require('d3-array')) // extend the d3 with d3-array
 
   Chart.defaults.scale.gridLines.display = false
