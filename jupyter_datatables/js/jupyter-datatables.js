@@ -1,11 +1,11 @@
-define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) {
+define('jupyter-datatables', ['moment', 'graph-objects'], function (moment, go) {
   require('datatables.net')
 
-  const _      = require('underscore')
-  const d3     = require('d3')
+  const _ = require('underscore')
+  const d3 = require('d3')
   const events = require('base/js/events')
 
-  $.fn.dataTable.defaults.dateDisplayFormat = "YYYYMMDD"
+  $.fn.dataTable.defaults.dateDisplayFormat = 'YYYYMMDD'
   $.fn.dataTable.defaults.formatDate = (t, format) => moment(t, format || $.fn.dataTable.defaults.dateDisplayFormat)
 
   $.fn.dataTable.Api.register('row.create()', function () {
@@ -20,31 +20,30 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
     return row
   })
 
-
   let mapDType = (dtypes, target) => _.object(_.zip(dtypes, new Array(dtypes.length).fill(target)))
 
   $.fn.dataTable.defaults.graphObjects = Object(go)
   $.fn.dataTable.defaults.dTypeMap = {
-    ...mapDType(['int8', 'int16', 'int32', 'int64', 'float8', 'float16', 'float32', 'float64'], "num"),
-    ...mapDType(['datetime8[ns]', 'datetime16[ns]', 'datetime32[ns]', 'datetime64[ns]'], "date"),
-    ...mapDType(['timedelta8[ns]', 'timedelta16[ns]', 'timedelta32[ns]', 'timedelta64[ns]'], "string"), // TODO: Custom type `timedelta`
-    ...mapDType(["object", "string"], "string"),
-    ...mapDType(["bool"], "boolean"),
-    ...mapDType(["default"], "num")
+    ...mapDType(['int8', 'int16', 'int32', 'int64', 'float8', 'float16', 'float32', 'float64'], 'num'),
+    ...mapDType(['datetime8[ns]', 'datetime16[ns]', 'datetime32[ns]', 'datetime64[ns]'], 'date'),
+    ...mapDType(['timedelta8[ns]', 'timedelta16[ns]', 'timedelta32[ns]', 'timedelta64[ns]'], 'string'), // TODO: Custom type `timedelta`
+    ...mapDType(['object', 'string'], 'string'),
+    ...mapDType(['bool'], 'boolean'),
+    ...mapDType(['default'], 'num')
   }
 
-  $.fn.dataTable.defaults.dTypePlotMap = {
-    boolean:  ['CategoricalBar', 'Histogram'],
-    date:     ['CategoricalBar', 'Histogram'],
-    num:      ['Histogram', 'CategoricalBar', 'Bar', 'Line'],
-    string:   ['CategoricalBar'],
+  $.fn.dataTable.defaults.chartMap = {
+    boolean: ['CategoricalBar', 'Histogram'],
+    date: ['CategoricalBar', 'Histogram'],
+    num: ['Histogram', 'CategoricalBar', 'Bar', 'Line'],
+    string: ['CategoricalBar'],
 
     undefined: ['Bar']
   }
 
   /**
-   * Boolean type detector
-   */
+	 * Boolean type detector
+	 */
   $.fn.dataTable.ext.type.detect.unshift(function (data) {
     const dtype = 'boolean'
 
@@ -56,131 +55,17 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
 
     return null
   })
-
-  /* Components */
-
-  class DTContainer extends HTMLDivElement {
-    constructor() {
-      super()
-
-      this.attachShadow({ mode: 'open' })
-
-      // Bulma CSS
-      const bulmaStyle = document.createElement('style')
-      bulmaStyle.textContent = `@import url(https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.5/css/bulma.min.css);`
-
-      this.shadowRoot.appendChild(bulmaStyle)
-
-      // Jupyter DataTables CSS
-      $(this.shadowRoot).append($('style#jupyter-datatables-css').clone())
-
-      // classes
-      this.classList.add("dt-container")
-    }
-
-    connectedCallback() {
-      // FontAwesome icons
-      const fas = document.querySelector('link[href*="fontawesome"]');
-
-      if (fas) {
-        this.shadowRoot.appendChild(fas.cloneNode());
-      }
-    }
-
-    append(e) {
-      this.shadowRoot.append(e)
-    }
-
-    appendChild(node) {
-      this.shadowRoot.appendChild(node)
-    }
-  }
-
-
-  class DTChartList extends HTMLUListElement {
-
-    constructor() {
-      super()
-
-      for (const chartName in $.fn.dataTable.defaults.graphObjects) {
-        const li = document.createElement("li")
-        const a = document.createElement("a")
-
-        a.setAttribute("role", "button")
-        a.setAttribute("aria-disabled", false)
-        a.setAttribute("aria-pressed", false)
-
-        a.setAttribute("data-chart_name", chartName)
-        a.setAttribute("data-label", 'button-chart-type')
-
-        a.style = "text-transform: capitalize"
-        a.textContent = `${chartName} chart`
-
-        a.classList.add("dt-button")
-        a.classList.add("dt-chart-type")
-
-        li.appendChild(a)
-
-        this.appendChild(li)
-      }
-
-      this.classList.add("menu-list")
-      this.classList.add("dt-chart-list")
-    }
-  }
-
-  customElements.define('dt-container', DTContainer, { extends: 'div' })
-  customElements.define('dt-chart-list', DTChartList, { extends: 'ul' })
-
-  /* Templates */
-
-  _.templateSettings = {
-    escape: /\{\{%-([\s\S]+?)%\}\}/g,
-    evaluate: /\{\{%([\s\S]+?)%\}\}/g,
-    interpolate: /\{\{(.+?)\}\}/g,
-  };
-
-  DTSettingsButtonComponentTemplate = _.template(`
-    <div class="button is-small dt-chart-settings-button">
-        <figure class="bd-link-figure">
-            <span class="icon">
-                <i class="fas fa-ellipsis-v"></i>
-            </span>
-
-        </figure>
-    </div>
-  `)
-
-  DTSettingsComponentTemplate = _.template(`
-    <div class="menu dt-chart-settings">
-        <p class="menu-label dt-chart-menu-label">Charts</p>
-        <ul class="menu-list">
-            <li>
-                <a>Kind</a>
-                <ul is="dt-chart-list"></ul>
-            </li>
-        </ul>
-    </div>
-  `)
-
-  createElementFromTemplate = function (template, context) {
-    tmp = document.implementation.createHTMLDocument()
-    tmp.body.innerHTML = template(context)
-
-    return tmp.body.children[0]
-  }
-
   /* Toolbar */
 
-  Toolbar = class {
-    constructor(chart, dtype) {
+  class Toolbar {
+    constructor (chart, dtype) {
       this.chart = chart
       this.dtype = dtype
 
       this.settings = createElementFromTemplate(DTSettingsComponentTemplate)
       this.settingsButton = createElementFromTemplate(DTSettingsButtonComponentTemplate)
 
-      $(this.settingsButton).click((e) => {
+      $(this.settingsButton).click(() => {
         if (this.settingsContainer.style.display != 'none') {
           // this.settings already visible, just toggle
           $(this.settingsContainer).hide()
@@ -197,7 +82,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
           $(this.settingsContainer).css(offset).show()
 
           if (!_.isUndefined(this.dtype)) {
-            const allowedChartTypes = $.fn.dataTable.defaults.dTypePlotMap[this.dtype]
+            const allowedChartTypes = $.fn.dataTable.defaults.chartMap[this.dtype]
 
             $(this.settings).find('.dt-chart-type').each((i, e) => {
               const chartName = e.dataset.chart_name
@@ -208,7 +93,6 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
               // check which chart types are not allowed for the current dtype and disable them
               if (!allowedChartTypes.includes(chartName)) {
                 $(e).addClass('is-disabled')
-
                 console.debug(`Chart type '${chartName}' is not allowed for dtype '${dtype}'`)
               } else {
                 // in case dtype changes for some reason
@@ -228,7 +112,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
       this.settingsContainer.classList.add('dt-chart-settings-container')
 
       $(this.settingsContainer).append(this.settings)
-      $(this.settingsContainer).css({ position: 'absolute' });
+      $(this.settingsContainer).css({ position: 'absolute' })
       $(this.settingsContainer).hide()
 
       // Append to the output area to allow overlay
@@ -236,32 +120,28 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
       $(output_area.element).append(this.settingsContainer)
 
       this.container = document.createElement('div', { is: 'dt-container' })
-      this.container.classList.add("dt-chart-toolbar")
+      this.container.classList.add('dt-chart-toolbar')
 
       $(this.container).append(this.settingsButton)
     }
-        
-    empty() {
-        this.destroy(false)
-    }
-    
-    destroy(container = true) {
-        this.settings.remove()
-        this.settingsButton.remove()
-        this.settingsContainer.remove()
-        
-        // finally remove the toolbar container itself if `container` is specified
-        if ( container )
-          this.container.remove()
-        else
-          $(this.container).empty()  // remove all children but leave the container
+
+    empty () {
+      this.destroy(false)
     }
 
-    onClick(callback, selector) {
+    destroy (container = true) {
+      this.settings.remove()
+      this.settingsButton.remove()
+      this.settingsContainer.remove()
+
+      // finally remove the toolbar container itself if `container` is specified
+      if (container) { this.container.remove() } else { $(this.container).empty() } // remove all children but leave the container
+    }
+
+    onClick (callback, selector) {
       let selection = $(this.settings).find(selector)
 
-      if (selection.length <= 0)
-        throw new Error(`Selector '${selector}' dit not match any elements.`)
+      if (selection.length <= 0) { throw new Error(`Selector '${selector}' dit not match any elements.`) }
 
       selection.each((i, elt) => {
         $(elt).click(e => {
@@ -273,13 +153,13 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
     }
   }
 
-  createDataToolbar = function (chart, data, index, dtype) {
+  let createDataToolbar = function (chart, data, index, dtype) {
     const toolbar = new Toolbar(chart, dtype)
 
     setTimeout(() => {
       toolbar.onClick(function (event, chart) {
-        if ( $(event.target).hasClass('is-active') ) {
-          event.preventDefault()  // do not propagate
+        if ($(event.target).hasClass('is-active')) {
+          event.preventDefault() // do not propagate
 
           console.debug(`Chart '${chart.name}' is already set. Skipping chart update.`)
           return
@@ -292,8 +172,8 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
         chart.toolbar.empty()
         chart.destroy()
 
-        chart.container.replaceWith( createDataPreview(data, index, dtype, go) )
-      }, "a.dt-chart-type")
+        chart.container.replaceWith(createDataPreview(data, index, dtype, go))
+      }, 'a.dt-chart-type')
     }, 100)
 
     return toolbar
@@ -321,44 +201,39 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
     return dTypeContainer
   }
 
-  createDataPreview = function (data, index, dtype, go) {
-    console.debug("Creating data preview.", data, index, dtype)
+  let createDataPreview = function (data, index, dtype, go) {
+    console.debug('Creating data preview.', data, index, dtype)
 
     const defaults = $.fn.dataTable.defaults
 
-    if (_.isUndefined(dtype))
-      console.warn('Data type was not provided.')
-
-    else if (!_.has(defaults.dTypePlotMap, dtype))
-      throw new Error(`Unknown dtype '${dtype}'.`)
+    if (_.isUndefined(dtype)) { console.warn('Data type was not provided.') } else if (!_.has(defaults.chartMap, dtype)) { throw new Error(`Unknown dtype '${dtype}'.`) }
 
     if (index.length > 1) {
-      console.warn("Multi-index is not supported yet. Picking the 0th level.")
+      console.warn('Multi-index is not supported yet. Picking the 0th level.')
       // TODO: handle multi-index
     }
 
-    //   let kind, plot, chart;
-    let kind, GraphObject;
+    let kind, GraphObject, chart
 
     if (_.isUndefined(go)) {
       console.warn('Graph object was not provided.')
 
-      for (let k of defaults.dTypePlotMap[dtype]) {
+      for (let k of defaults.chartMap[dtype]) {
         if (_.has(defaults.graphObjects, k)) {
           kind = k
           GraphObject = defaults.graphObjects[k]
 
-          chart = GraphObject(data, index, dtype)
-          if (chart)
-            break
+          chart = new GraphObject(data, index, dtype)
+          if (chart) { break }
         }
-        console.warn("Unknown plot kind: ", k)
+        console.warn('Unknown plot kind: ', k)
       }
 
-      if (_.isUndefined(kind))
+      if (_.isUndefined(kind)) {
         throw new Error(
           `Unable to find graph object for dtype '${dtype}' in: ${defaults.graphObjects}`
         )
+      }
     } else {
       GraphObject = _.isString(go) ? defaults.graphObjects[go] : go
       chart = new GraphObject(data, index, dtype)
@@ -367,39 +242,38 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
     // set chart name for future reference
     chart.name = GraphObject.name
 
-    if (_.isUndefined(chart) || chart === null)
+    if (_.isUndefined(chart) || chart === null) {
       throw new Error(
         `Unable to produce graph object for dtype '${dtype}'`
       )
+    }
 
     register_chart_events(chart)
 
-    console.debug("Data preview has been created: ", chart)
+    console.debug('Data preview has been created: ', chart)
 
     chart.toolbar = createDataToolbar(chart, data, index, dtype)
-    chart.container = $("<div/>", { class: 'dt-chart-container' })
+    chart.container = $('<div/>', { class: 'dt-chart-container' })
       .append(chart.toolbar.container)
       .append(chart.canvas)
 
     return chart.container
   }
 
-  let showTooltip = function(chart, pointIndex, datasetIndex = 0) {
-    if (chart.animating) return  // chart is still in animation process
+  let showTooltip = function (chart, pointIndex, datasetIndex = 0) {
+    if (chart.animating) return // chart is still in animation process
 
-    if( _.isUndefined(chart.tooltip._active) )
-      chart.tooltip._active = []
+    if (_.isUndefined(chart.tooltip._active)) { chart.tooltip._active = [] }
 
     let activeElements = chart.tooltip._active
     let requestedElement = chart.getDatasetMeta(datasetIndex).data[pointIndex]
 
-    for(var i = 0; i < activeElements.length; i++) {
-       if(requestedElement._index == activeElements[i]._index)  
-          return
+    for (var i = 0; i < activeElements.length; i++) {
+      if (requestedElement._index == activeElements[i]._index) { return }
     }
 
     activeElements.push(requestedElement)
-    
+
     chart.tooltip._active = activeElements
     chart.tooltip.update(true)
     chart.tooltip.pivot()
@@ -408,8 +282,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
 
   let hideTooltip = function (chart, pointIndex, datasetIndex = 0) {
     let activeElements = chart.tooltip._active
-    if (_.isUndefined(activeElements) || activeElements.length == 0)
-      return
+    if (_.isUndefined(activeElements) || activeElements.length == 0) { return }
 
     let requestedElement = chart.getDatasetMeta(datasetIndex).data[pointIndex]
     for (var i = 0; i < activeElements.length; i++) {
@@ -424,11 +297,9 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
     chart.draw()
   }
 
-
   let hideAllTooltips = function (chart) {
     let activeElements = chart.tooltip._active
-    if (_.isUndefined(activeElements) || activeElements.length == 0)
-      return
+    if (_.isUndefined(activeElements) || activeElements.length == 0) { return }
 
     activeElements = []
 
@@ -437,9 +308,8 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
     chart.draw()
   }
 
-
   let register_chart_events = function (chart) {
-    events.on('hideAllTooltips.ChartJS', (e) => {
+    events.on('hide_all_tooltips.ChartJS', () => {
       hideAllTooltips(chart)
     })
 
@@ -449,11 +319,10 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
       // Show tooltip on certain data point
       const dataPoint = d.data
 
-      let datasetIndex;
+      let datasetIndex
       if (_.has(chart, 'mapDataPoint')) {
         datasetIndex = chart.mapDataPoint(dataPoint)
-      } else
-        datasetIndex = chart.data.labels.indexOf(dataPoint.index)
+      } else { datasetIndex = chart.data.labels.indexOf(dataPoint.index) }
 
       showTooltip(chart, datasetIndex)
     })
@@ -507,7 +376,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
               let data = dt.column(i).data().toArray()
 
               if ($(e).is('th')) {
-                index.push({data: data, dtype: dtype, level: i})
+                index.push({ data: data, dtype: dtype, level: i })
                 return
               }
 
@@ -538,13 +407,13 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
         buttons: buttons
       })
 
-      dt.on('mouseleave', 'tbody', function(e) {
-        events.trigger('hideAllTooltips.ChartJS')
+      dt.on('mouseleave', 'tbody', function (e) {
+        events.trigger('hide_all_tooltips.ChartJS')
       })
 
       dt.on('mouseenter', 'td', function (e) {
         let cell = dt.cell(this)
-        let idx  = cell.index()
+        let idx = cell.index()
 
         const dIndex = dt.row(idx.row).data()[0]
         const dValue = dt.row(idx.row).data()[idx.column]
@@ -565,19 +434,17 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
       events.on('before_finalize.JupyterRequire', function () {
         const canvasElements = $('canvas')
 
-        console.log("Finalizing canvas elements...", canvasElements)
+        console.log('Finalizing canvas elements...', canvasElements)
         canvasElements.each((i, canvas) => {
-          const parent = canvas.parentNode
           const dataURL = canvas.toDataURL('image/png')
+          const canvasPNG = $('<img/>', { src: dataURL, class: 'dt-chart-image' }).get(0)
 
-          const canvasPNG = $("<img/>", { src: dataURL, class: "dt-chart-image" }).get(0)
-
-          console.debug("\tResulting image: ", canvasPNG)
+          console.debug('\tResulting image: ', canvasPNG)
 
           canvas.replaceWith(canvasPNG)
         })
 
-        console.debug("\tDisabling buttons and search fields...")
+        console.debug('\tDisabling buttons and search fields...')
 
         $('a.paginate_button, .dt-button, input[type=search], .dataTables_length select')
           .off('click')
@@ -586,7 +453,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
           .addClass('disabled')
           .prop('disabled', true)
 
-        console.log("Canvas finalization completed successfully.")
+        console.log('Canvas finalization completed successfully.')
       })
 
       events.one('output_appended.OutputArea', () => {
@@ -598,11 +465,11 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
   }
 
   /**
-     * Create HTML table from raw String and append it to an element
-     *
-     * @param {String} html
-     * @param {Element} element
-     */
+	   * Create HTML table from raw String and append it to an element
+	   *
+	   * @param {String} html
+	   * @param {Element} element
+	   */
   let appendTable = function (html, element) {
     return new Promise((resolve) => {
       const table = $.parseHTML(html)
@@ -615,8 +482,8 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
   }
 
   /**
-   * Initialize events
-   */
+	 * Initialize events
+	 */
   let initDataTableEvents = function () {
     // Focus search field event
     $(document).on('focus', '.dataTables_filter input', function (e) {
@@ -636,7 +503,7 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
         let cell = Jupyter.notebook.get_selected_cell()
         let oArea = cell.output_area
 
-        $(this).blur()  // focus out of the search element
+        $(this).blur() // focus out of the search element
 
         oArea.keyboard_manager.enable()
 
@@ -648,8 +515,8 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
   }
 
   /**
-     * Create DataTable from raw string and append it to an element
-     */
+	   * Create DataTable from raw string and append it to an element
+	   */
   return appendDataTable = async function (html, options, buttons, element) {
     const table = await appendTable(html, element)
 
