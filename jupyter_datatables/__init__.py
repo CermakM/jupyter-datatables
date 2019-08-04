@@ -160,6 +160,10 @@ def init_datatables_mode(options: dict = None, classes: list = None):
     )
 
     load_js(
+        Path(_HERE, "js/config.js").read_text(encoding="utf-8"),
+        {"id": "dt-config-js"})
+
+    load_js(
         Path(_HERE, "js/components.js").read_text(encoding="utf-8"),
         {"id": "dt-components-js"})
 
@@ -267,6 +271,7 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
             "datatables.net",
             "d3",
             "chartjs",
+            "dt-config",
             "dt-components",
             "dt-graph-objects",
             "dt-toolbar",

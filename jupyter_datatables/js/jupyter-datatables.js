@@ -1,17 +1,17 @@
 define('jupyter-datatables', [
   'moment',
+  'dt-config',
   'dt-components',
   'dt-graph-objects',
   'dt-toolbar',
-], function (moment, components, go, Toolbar) {
+], function (moment, config, components, go, Toolbar) {
   require('datatables.net')
 
   const _ = require('underscore')
   const d3 = require('d3')
   const events = require('base/js/events')
 
-  $.fn.dataTable.defaults.dateDisplayFormat = 'YYYYMMDD'
-  $.fn.dataTable.defaults.formatDate = (t, format) => moment(t, format || $.fn.dataTable.defaults.dateDisplayFormat)
+  config.graphObjects = Object(go)
 
   $.fn.dataTable.Api.register('row.create()', function () {
     let row = $(this.row(0).node())
@@ -24,27 +24,6 @@ define('jupyter-datatables', [
 
     return row
   })
-
-  let mapDType = (dtypes, target) => _.object(_.zip(dtypes, new Array(dtypes.length).fill(target)))
-
-  $.fn.dataTable.defaults.graphObjects = Object(go)
-  $.fn.dataTable.defaults.dTypeMap = {
-    ...mapDType(['int8', 'int16', 'int32', 'int64', 'float8', 'float16', 'float32', 'float64'], 'num'),
-    ...mapDType(['datetime8[ns]', 'datetime16[ns]', 'datetime32[ns]', 'datetime64[ns]'], 'date'),
-    ...mapDType(['timedelta8[ns]', 'timedelta16[ns]', 'timedelta32[ns]', 'timedelta64[ns]'], 'string'), // TODO: Custom type `timedelta`
-    ...mapDType(['object', 'string'], 'string'),
-    ...mapDType(['bool'], 'boolean'),
-    ...mapDType(['default'], 'num')
-  }
-
-  $.fn.dataTable.defaults.chartMap = {
-    boolean: ['CategoricalBar', 'Histogram'],
-    date: ['CategoricalBar', 'Histogram'],
-    num: ['Histogram', 'CategoricalBar', 'Bar', 'Line'],
-    string: ['CategoricalBar'],
-
-    undefined: ['Bar']
-  }
 
   /**
 	 * Boolean type detector
@@ -87,8 +66,6 @@ define('jupyter-datatables', [
     return toolbar
   }
 
-  /* Data Preview */
-
   let createDTypePreview = function (dtype) {
     const dTypeContainer = $('<div>')
       .attr('class', 'dtype-container')
@@ -112,9 +89,7 @@ define('jupyter-datatables', [
   let createDataPreview = function (data, index, dtype, go) {
     console.debug('Creating data preview.', data, index, dtype)
 
-    const defaults = $.fn.dataTable.defaults
-
-    if (_.isUndefined(dtype)) { console.warn('Data type was not provided.') } else if (!_.has(defaults.chartMap, dtype)) { throw new Error(`Unknown dtype '${dtype}'.`) }
+    if (_.isUndefined(dtype)) { console.warn('Data type was not provided.') } else if (!_.has(config.chartMap, dtype)) { throw new Error(`Unknown dtype '${dtype}'.`) }
 
     if (index.length > 1) {
       console.warn('Multi-index is not supported yet. Picking the 0th level.')
@@ -126,10 +101,10 @@ define('jupyter-datatables', [
     if (_.isUndefined(go)) {
       console.warn('Graph object was not provided.')
 
-      for (let k of defaults.chartMap[dtype]) {
-        if (_.has(defaults.graphObjects, k)) {
+      for (let k of config.chartMap[dtype]) {
+        if (_.has(config.graphObjects, k)) {
           kind = k
-          GraphObject = defaults.graphObjects[k]
+          GraphObject = config.graphObjects[k]
 
           chart = new GraphObject(data, index, dtype)
           if (chart) { break }
@@ -139,11 +114,11 @@ define('jupyter-datatables', [
 
       if (_.isUndefined(kind)) {
         throw new Error(
-          `Unable to find graph object for dtype '${dtype}' in: ${defaults.graphObjects}`
+          `Unable to find graph object for dtype '${dtype}' in: ${config.graphObjects}`
         )
       }
     } else {
-      GraphObject = _.isString(go) ? defaults.graphObjects[go] : go
+      GraphObject = _.isString(go) ? config.graphObjects[go] : go
       chart = new GraphObject(data, index, dtype)
     }
 
@@ -262,7 +237,7 @@ define('jupyter-datatables', [
 
               // map dtype back to known format
               // TODO: run type detectors instead of assuming 'num'
-              settings.aoColumns[i].sType = $.fn.dataTable.defaults.dTypeMap[dtype]
+              settings.aoColumns[i].sType = config.dTypeMap[dtype]
             })
 
           dTypePreviewRow.ready(() => {
