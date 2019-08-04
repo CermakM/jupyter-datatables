@@ -210,7 +210,7 @@ define('jupyter-datatables', [
             $(settings.nTHead).append(dataPreviewRow)
           })
 
-          // if there is a search bar, disable the keyboard manager on focus
+          registerDataTableEvents(dt)
 
           resolve(settings)
         }
@@ -221,55 +221,6 @@ define('jupyter-datatables', [
         .columns.adjust()
       let btns = new $.fn.dataTable.Buttons(dt, {
         buttons: buttons
-      })
-
-      dt.on('mouseleave', 'tbody', function (e) {
-        events.trigger('hide_all_tooltips.ChartJS')
-      })
-
-      dt.on('mouseenter', 'td', function (e) {
-        let cell = dt.cell(this)
-        let idx = cell.index()
-
-        const dIndex = dt.row(idx.row).data()[0]
-        const dValue = dt.row(idx.row).data()[idx.column]
-
-        const canvas = $(dt.table().container())
-          .find('canvas')
-          .get(idx.column - 1)
-
-        $(canvas).trigger('show_tooltip.ChartJS', {
-          cell: cell,
-          data: {
-            index: dIndex,
-            value: dValue
-          }
-        })
-      })
-
-      events.on('before_finalize.JupyterRequire', function () {
-        const canvasElements = $('canvas')
-
-        console.log('Finalizing canvas elements...', canvasElements)
-        canvasElements.each((i, canvas) => {
-          const dataURL = canvas.toDataURL('image/png')
-          const canvasPNG = $('<img/>', { src: dataURL, class: 'dt-chart-image' }).get(0)
-
-          console.debug('\tResulting image: ', canvasPNG)
-
-          canvas.replaceWith(canvasPNG)
-        })
-
-        console.debug('\tDisabling buttons and search fields...')
-
-        $('a.paginate_button, .dt-button, input[type=search], .dataTables_length select')
-          .off('click')
-          .css('cursor', 'not-allowed')
-          .css('color', '#999')
-          .addClass('disabled')
-          .prop('disabled', true)
-
-        console.log('Canvas finalization completed successfully.')
       })
 
       events.one('output_appended.OutputArea', () => {
@@ -300,7 +251,57 @@ define('jupyter-datatables', [
     })
   }
 
-  let registerDataTableEvents = function () {
+  let registerDataTableEvents = function (dt) {
+
+    dt.on('mouseleave', 'tbody', function (e) {
+      events.trigger('hide_all_tooltips.ChartJS')
+    })
+
+    dt.on('mouseenter', 'td', function (e) {
+      let cell = dt.cell(this)
+      let idx = cell.index()
+
+      const dIndex = dt.row(idx.row).data()[0]
+      const dValue = dt.row(idx.row).data()[idx.column]
+
+      const canvas = $(dt.table().container())
+        .find('canvas')
+        .get(idx.column - 1)
+
+      $(canvas).trigger('show_tooltip.ChartJS', {
+        cell: cell,
+        data: {
+          index: dIndex,
+          value: dValue
+        }
+      })
+    })
+
+    events.on('before_finalize.JupyterRequire', function () {
+      const canvasElements = $('canvas')
+
+      console.log('Finalizing canvas elements...', canvasElements)
+      canvasElements.each((i, canvas) => {
+        const dataURL = canvas.toDataURL('image/png')
+        const canvasPNG = $('<img/>', { src: dataURL, class: 'dt-chart-image' }).get(0)
+
+        console.debug('\tResulting image: ', canvasPNG)
+
+        canvas.replaceWith(canvasPNG)
+      })
+
+      console.debug('\tDisabling buttons and search fields...')
+
+      $('a.paginate_button, .dt-button, input[type=search], .dataTables_length select')
+        .off('click')
+        .css('cursor', 'not-allowed')
+        .css('color', '#999')
+        .addClass('disabled')
+        .prop('disabled', true)
+
+      console.log('Canvas finalization completed successfully.')
+    })
+
     // Focus search field event
     $(document).on('focus', '.dataTables_filter input', function (e) {
       setTimeout(() => {
@@ -352,8 +353,6 @@ define('jupyter-datatables', [
 	   */
   return appendDataTable = async function (html, options, buttons, element) {
     const table = await appendTable(html, element)
-
-    registerDataTableEvents()
 
     return createDataTable(table, options, buttons)
   }
