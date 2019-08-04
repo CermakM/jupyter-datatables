@@ -247,6 +247,22 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
 
       $(this.container).append(this.settingsButton)
     }
+        
+    empty() {
+        this.destroy(false)
+    }
+    
+    destroy(container = true) {
+        this.settings.remove()
+        this.settingsButton.remove()
+        this.settingsContainer.remove()
+        
+        // finally remove the toolbar container itself if `container` is specified
+        if ( container )
+          this.container.remove()
+        else
+          $(this.container).empty()  // remove all children but leave the container
+    }
 
     onClick(callback, selector) {
       let selection = $(this.settings).find(selector)
@@ -257,9 +273,8 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
       selection.each((i, elt) => {
         $(elt).click(e => {
           e.preventDefault()
-          callback.call(elt, e, this.chart)
 
-          $(this.settings).hide()
+          callback.call(elt, e, this.chart)
         })
       })
     }
@@ -270,14 +285,21 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
 
     setTimeout(() => {
       toolbar.onClick(function (event, chart) {
+        if ( $(event.target).hasClass('is-active') ) {
+          event.preventDefault()  // do not propagate
+
+          console.debug(`Chart '${chart.name}' is already set. Skipping chart update.`)
+          return
+        }
+
         console.debug('Updating chart:', chart)
 
         const go = this.dataset.chart_name
-        const container = createDataPreview(data, index, dtype, go)
 
+        chart.toolbar.empty()
         chart.destroy()
-        chart.container.replaceWith(container)
 
+        chart.container.replaceWith( createDataPreview(data, index, dtype, go) )
       }, "a.dt-chart-type")
     }, 100)
 
@@ -361,10 +383,9 @@ define('jupyter-datatables', ["moment", "graph-objects"], function (moment, go) 
 
     console.debug("Data preview has been created: ", chart)
 
-    toolbar = createDataToolbar(chart, data, index, dtype)
-
+    chart.toolbar = createDataToolbar(chart, data, index, dtype)
     chart.container = $("<div/>", { class: 'dt-chart-container' })
-      .append(toolbar.container)
+      .append(chart.toolbar.container)
       .append(chart.canvas)
 
     return chart.container
