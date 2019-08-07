@@ -1,4 +1,25 @@
-define('dt-components', function () {
+/**
+ * Jupyter DataTables
+ *
+ * @module
+ * @summary     Jupyter DataTables
+ * @description Jupyter interactive pandas DataFrame representation leveraging pandas, DataTables and ChartJS.
+ * @file        components.js
+ * @author      Marek Cermak
+ * @contact     macermak@redhat.com
+ * @copyright   Copyright 2019 Marek Cermak <macermak@redhat.com>
+ *
+ * This source file is free software, available under the following license:
+ *   MIT license
+ *
+ * This source file is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the license files for details.
+ *
+ * For details please refer to: https://github.com/CermakM/jupyter-datatables
+ */
+
+define('dt-components', ['underscore'], function (_) {
 
   _.templateSettings = {
     escape: /\{\{%-([\s\S]+?)%\}\}/g,
