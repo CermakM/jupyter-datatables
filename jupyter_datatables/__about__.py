@@ -9,7 +9,7 @@ __title__ = "jupyter-datatables"
 __summary__ = "Jupyter Notebook extension to levarage pandas DataFrames by integrating DataTables JS."
 __uri__ = "https://github.com/CermakM/jupyter-datatables"
 
-__version__ = "0.3.7"
+__version__ = "0.3.8"
 
 __author__ = "Marek Cermak"
 __email__ = "macermak@redhat.com"
