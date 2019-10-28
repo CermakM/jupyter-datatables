@@ -34,13 +34,6 @@ The jupyter-datatables uses [jupyter-require](https://github.com/CermakM/jupyter
 pip install jupyter-datatables
 ```
 
-And enable the required extensions
-
-```bash
-jupyter nbextension install --sys-prefix --py jupyter_require
-jupyter nbextension enable jupyter-require/extension
-```
-
 <br>
 
 #### Usage
