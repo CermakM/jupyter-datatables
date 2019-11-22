@@ -53,9 +53,43 @@ __all__ = ['config', 'init_datatables_mode', '__version__']
 
 _HERE = Path(__file__).parent
 
+_IS_ENABLED = True
+_IS_INITIALIZED = False
+
+__REPR__ = None
+
+
+def enable_datatables_mode():
+    """Enable Jupyter DataTables."""
+    global _IS_ENABLED
+
+    if not _IS_INITIALIZED:
+        init_datatables_mode()
+    else:
+        pd.DataFrame._repr_javascript_ = __REPR__
+
+    _IS_ENABLED = True
+
+
+def disable_datatables_mode():
+    """Disable Jupyter DataTables."""
+    global _IS_ENABLED
+
+    if _IS_INITIALIZED:
+        del pd.DataFrame._repr_javascript_
+
+    _IS_ENABLED = False
+
 
 def init_datatables_mode(options: dict = None, classes: list = None):
     """Initialize DataTable mode for pandas DataFrame representation."""
+    global _IS_INITIALIZED
+    global __REPR__
+
+    if not _IS_ENABLED:
+        raise Exception(
+            "Jupyter DataTables are disabled. Use `enable_datatables_mode()` instead.")
+
     # extensions to be loaded
     extensions = config.defaults.extensions
 
@@ -69,7 +103,8 @@ def init_datatables_mode(options: dict = None, classes: list = None):
         },
         "shim": {
             "chartjs": {
-                "deps": ["moment"]  # enforce moment to be loaded before chartjs
+                # enforce moment to be loaded before chartjs
+                "deps": ["moment"]
             }
         },
     })
@@ -77,7 +112,8 @@ def init_datatables_mode(options: dict = None, classes: list = None):
     # configure path to the datatables library using requireJS
     libs = OrderedDict(
         {
-            "datatables.net": "https://cdn.datatables.net/1.10.18/js/jquery.dataTables"  # FIXME: minified version on prod
+            # FIXME: minified version on prod
+            "datatables.net": "https://cdn.datatables.net/1.10.18/js/jquery.dataTables"
         }
     )
     shim = OrderedDict({"datatables.net": {"exports": "$.fn.dataTable"}})
@@ -183,9 +219,13 @@ def init_datatables_mode(options: dict = None, classes: list = None):
         Path(_HERE, "js/jupyter-datatables.js").read_text(encoding="utf-8"),
         {"id": "jupyter-datatables-js"})
 
-    pd.DataFrame._repr_javascript_ = partialmethod(
+    __REPR__ = partialmethod(
         _repr_datatable_, options=options, classes=classes
     )
+
+    _IS_INITIALIZED = True
+
+    pd.DataFrame._repr_javascript_ = __REPR__
 
 
 def _repr_datatable_(self, options: dict = None, classes: list = None):
@@ -202,7 +242,8 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
 
     # pop buttons, we need to use them separately
     buttons = options.pop("buttons", [])
-    classes = classes if classes is not None else " ".join(config.defaults.classes)
+    classes = classes if classes is not None else " ".join(
+        config.defaults.classes)
 
     script = """
     const settings = await appendDataTable(`$$html`, $$options, $$buttons, element);
@@ -218,7 +259,7 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
             f"Sample size cannot be larger than length of the table: {sample_size} > {len(df)}"
         )
 
-    adjusted =  False
+    adjusted = False
 
     if config.defaults.limit is not None:
         n = len(self)
@@ -240,17 +281,18 @@ def _repr_datatable_(self, options: dict = None, classes: list = None):
                 idx.extend(self.index[:min(len(self), 10, sample_size)])
                 idx.extend(self.nlargest(fraction, col).index)
                 idx.extend(self.nsmallest(fraction, col).index)
-        
+
         idx = set(idx)
-        random_index  = self.index.difference(idx)
-        random_sample = sample_size - min(len(idx), sample_size) if len(random_index) else 0
+        random_index = self.index.difference(idx)
+        random_sample = sample_size - \
+            min(len(idx), sample_size) if len(random_index) else 0
 
         sample_index = pd.Index({
             *idx,
             *np.random.choice(random_index, size=random_sample, replace=False)
         })
         adjusted = len(sample_index) != sample_size
-        
+
         df = self.loc[sample_index].sort_index()
 
         sample_size = len(df)
@@ -341,7 +383,7 @@ def _get_columns_defs(df: pd.DataFrame, options: dict = None):
         col_def.update(type=dtype, targets=col_idx)
         if append:
             col_defs.append(col_def)
-    
+
     return col_defs
 
 
@@ -365,12 +407,12 @@ def _calculate_sample_size(n, ci: float = 0.975, e: float = 0.02, p: float = 0.5
 
 def _smart_ceil(x: typing.Union[int, float], order: int = None) -> int:
     """Smart ceil to the nearest round integer.
-    
+
     The 'nearest' is chosen based on the order of the given number
     """
     order = int(order) if order else len(str(math.ceil(x)))
     if order <= 0:
         raise ValueError("`order` must be integer >= 0")
     mod = math.pow(10, min([order, 3]))
-    
+
     return int(x if x % mod == 0 else x + mod - x % mod)
