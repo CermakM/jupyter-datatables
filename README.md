@@ -1,18 +1,18 @@
 # Jupyter DataTables
 
-<a href="https://nbviewer.jupyter.org/github/CermakM/jupyter-datatables/blob/master/examples/jupyter-datatables-0.3.0.ipynb" 
+<a href="https://mybinder.org/v2/gh/CermakM/jupyter-datatables/master?filepath=examples%2Fjupyter-datatables-0.4.0.ipynb"
    target="_parent">
-   <img align="left" 
+   <img align="left"
       src="https://mybinder.org/badge_logo.svg">
 </a>
-<a href="https://nbviewer.jupyter.org/github/CermakM/jupyter-datatables/blob/master/examples/" 
+<a href="https://nbviewer.jupyter.org/github/CermakM/jupyter-datatables/blob/master/examples/"
    target="_parent">
    <img
-      src="https://raw.githubusercontent.com/jupyter/design/master/logos/Badges/nbviewer_badge.png" 
+      src="https://raw.githubusercontent.com/jupyter/design/master/logos/Badges/nbviewer_badge.png"
       width="109" height="20">
 </a>
 
-Jupyter Notebook extension to levarage pandas DataFrames by integrating DataTables JS.
+Jupyter Notebook extension to leverage pandas DataFrames by integrating DataTables JS.
 
 
 
